@@ -4,6 +4,7 @@ import { useAppContext } from "@/context/app-context"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Download, ArrowLeft } from "lucide-react"
+import Image from "next/image"
 
 export function DownloadOptions() {
   const { step, setStep, selectedCountry, selectedDocument, processedImage } = useAppContext()
@@ -46,7 +47,15 @@ export function DownloadOptions() {
               <h3 className="font-medium">Your Photo is Ready!</h3>
               <div className="text-sm text-slate-500">
                 {selectedDocument?.name} ({getPhotoSize()}) for {selectedCountry?.name}{" "}
-                {selectedCountry?.flag}
+                {selectedCountry?.flag && (
+                  <Image
+                    src={selectedCountry.flag}
+                    alt={`${selectedCountry.name} flag`}
+                    width={24}
+                    height={16}
+                    className="inline-block"
+                  />
+                )}
               </div>
             </div>
 
@@ -70,13 +79,33 @@ export function DownloadOptions() {
             <div className="mt-8 w-full">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
                 <h4 className="font-medium mb-2">Photo Specifications</h4>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Dimensions: {getPhotoSize()}</li>
-                  <li>Digital size: {selectedDocument?.pixelDimensions}</li>
-                  <li>Aspect ratio: {selectedDocument?.aspectRatio}</li>
-                  <li>Background: White or light gray</li>
+                <ul className="list-disc pl-5 space-y-1 mb-4">
+                  <li>Document: {selectedDocument?.name}</li>
+                  <li>Country: {selectedCountry?.name}</li>
+                  <li>Physical size: {getPhotoSize()}</li>
+                  <li>Digital size: {selectedDocument && `${Math.round((selectedDocument.dimensions.width / (selectedDocument.dimensions.units === "mm" ? 25.4 : 1)) * selectedDocument.dimensions.dpi)}×${Math.round((selectedDocument.dimensions.height / (selectedDocument.dimensions.units === "mm" ? 25.4 : 1)) * selectedDocument.dimensions.dpi)} pixels at ${selectedDocument.dimensions.dpi} DPI`}</li>
+                  <li>Background color: {selectedDocument?.backgroundColor === "#ffffff" ? "White" : selectedDocument?.backgroundColor === "#eeeeee" ? "Light gray" : selectedDocument?.backgroundColor}</li>
                   <li>Format: JPG</li>
                 </ul>
+                {selectedDocument?.officialLinks && selectedDocument.officialLinks.length > 0 && (
+                  <>
+                    <h4 className="font-medium mb-2">Official Resources</h4>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {selectedDocument.officialLinks.map((link, index) => (
+                        <li key={index}>
+                          <a
+                            href={link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >
+                            Official document requirements
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
               </div>
             </div>
           </div>
