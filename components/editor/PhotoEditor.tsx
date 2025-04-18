@@ -83,7 +83,7 @@ export const PhotoEditor: React.FC<PhotoEditorProps> = ({
 
   return (
     <div className="relative">
-      <canvas ref={canvasRef} />
+      <canvas ref={canvasRef} data-testid="editor-canvas" />
     </div>
   );
 }; 
