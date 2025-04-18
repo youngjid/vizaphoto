@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 
 export function Footer() {
   return (
@@ -6,8 +7,17 @@ export function Footer() {
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="font-bold text-lg mb-4">Vizaphoto.com</h3>
-            <p className="text-sm text-slate-600">
+            <Link href="/" className="flex items-center -my-6">
+              <Image
+                src="/assets/brand/logo-no-bg.png"
+                alt="Vizaphoto.com"
+                width={480}
+                height={144}
+                className="h-32 w-auto max-w-none"
+                priority
+              />
+            </Link>
+            <p className="text-sm text-slate-600 mt-4">
               Create perfect passport and ID photos that meet official requirements for any country.
             </p>
           </div>
