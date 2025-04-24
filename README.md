@@ -10,8 +10,10 @@ VizaPhoto is a modern web application built with Next.js that helps users genera
 - **Background Removal**: Automatic background removal using fal-ai API
 - **Photo Editing**: 
   - Automatic size adjustment based on country requirements
-  - Face detection and positioning
+  - Face detection and positioning with automatic rotation
   - Grid overlay for proper alignment
+  - Guideline overlay for proper alignment
+- **Face Validation on Upload**: Ensures a face is detected before proceeding to the editor
 - **Download Options**:
   - Multiple photo layouts (1x1, 2x2, 4x4)
   - High-quality JPG output
