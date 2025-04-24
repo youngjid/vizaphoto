@@ -10,7 +10,6 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Vizaphoto.com - Passport & ID Photo Maker",
   description: "Create perfect passport and ID photos that meet official requirements for any country",
-  generator: 'v0.dev',
   icons: {
     icon: [
       { url: '/assets/brand/favicon.ico', sizes: 'any' }
