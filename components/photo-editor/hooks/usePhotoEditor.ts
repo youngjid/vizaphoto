@@ -69,6 +69,7 @@ export const usePhotoEditor = (
     rotation: 0,
     originalWidth: 0,
     originalHeight: 0,
+    initialZoom: 1,
   })
 
   const [dragState, setDragState] = useState<DragState>({
@@ -172,7 +173,7 @@ export const usePhotoEditor = (
     if (!uploadedImage || step !== 3 || !modelsLoaded || !faceapi) {
       // Reset state if dependencies change or step is wrong
       imageRef.current = null;
-      setImageState((prev) => ({ ...prev, rotation: 0, originalWidth: 0, originalHeight: 0, zoom: 1, scale: 1 }));
+      setImageState((prev) => ({ ...prev, rotation: 0, originalWidth: 0, originalHeight: 0, zoom: 1, scale: 1, initialZoom: 1 }));
       // Don't reset guidelines here, let the other effect handle defaults
       // if (selectedDocument) calculateInitialGridLines(selectedDocument);
       // No need to set isDetecting false here, handled by guideline effect
@@ -191,7 +192,7 @@ export const usePhotoEditor = (
       imageRef.current = img;
       const initialZoom = calculateInitialZoom(img.width, img.height);
       
-      // Set initial image state (zoom, dimensions, but rotation 0 for now)
+      // Set initial image state, including initialZoom
       setImageState((prev: ImageState) => ({ 
         ...prev,
         originalWidth: img.width,
@@ -199,6 +200,7 @@ export const usePhotoEditor = (
         zoom: initialZoom,
         scale: initialZoom,
         rotation: 0, 
+        initialZoom: initialZoom,
       }));
       // Reset guidelines to document defaults initially
       if (selectedDocument) calculateInitialGridLines(selectedDocument);

@@ -43,6 +43,7 @@ export interface ImageState {
   zoom: number
   originalWidth: number
   originalHeight: number
+  initialZoom: number
 }
 
 export interface DragState {

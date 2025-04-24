@@ -310,8 +310,8 @@ export function PhotoEditor() {
                     <ZoomOut className="h-4 w-4 text-slate-500" />
                     <Slider
                       value={[imageState.zoom * 100]}
-                      min={50}
-                      max={200}
+                      min={Math.max(10, imageState.initialZoom * 100)}
+                      max={300}
                       step={1}
                       onValueChange={(value) => handleZoom(value[0] / 100)}
                       className="w-32"
