@@ -1,4 +1,9 @@
-import { useState, useRef, useEffect } from "react"
+import React, { useState, useRef, useEffect } from "react"
+// Remove explicit TFJS imports
+// import '@tensorflow/tfjs'; 
+// import '@tensorflow/tfjs-backend-webgl';
+// Import directly from the browser bundle
+import * as faceapi from 'face-api.js/dist/face-api.js'; 
 import type { DocumentType } from "@/data/countries"
 import type {
   GridLinesState,
@@ -9,6 +14,19 @@ import type {
   CanvasDimensions
 } from "../types"
 import { drawImage } from "../utils/canvas"
+
+// Use original type definition (assuming face-api.js types are installed/resolved)
+type FaceDetectionResult = faceapi.WithFaceLandmarks<{ detection: faceapi.FaceDetection }, faceapi.FaceLandmarks68>
+
+// Helper function to get center point of landmarks
+const getCenterPoint = (landmarks: faceapi.Point[]) => {
+  if (!landmarks || landmarks.length === 0) {
+    return { x: 0, y: 0 };
+  }
+  const x = landmarks.reduce((sum, point) => sum + point.x, 0) / landmarks.length;
+  const y = landmarks.reduce((sum, point) => sum + point.y, 0) / landmarks.length;
+  return { x, y };
+};
 
 export const usePhotoEditor = (
   uploadedImage: string | null,
@@ -62,6 +80,12 @@ export const usePhotoEditor = (
     removeBackground: false,
     isRemovingBackground: false,
   })
+
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [modelLoadingError, setModelLoadingError] = useState<string | null>(null);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [detectionResult, setDetectionResult] = useState<FaceDetectionResult | null>(null);
+  const [autoRotationAngle, setAutoRotationAngle] = useState(0);
 
   // Calculate initial zoom to fit image in view
   const calculateInitialZoom = (imgWidth: number, imgHeight: number) => {
@@ -122,31 +146,132 @@ export const usePhotoEditor = (
     }
   }, [selectedDocument])
 
-  // Load image when uploadedImage changes
+  // Load models (no longer dependent on tfBackendReady)
   useEffect(() => {
-    if (!uploadedImage || step !== 3) return
+    // if (!tfBackendReady) return; // Remove backend check
 
-    const img = new window.Image()
-    img.crossOrigin = "anonymous"
+    const loadModels = async () => {
+      const MODEL_URL = '/models';
+      setModelLoadingError(null);
+      setModelsLoaded(false); 
+      try {
+        console.log('Loading face detection models...');
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL), // Use static faceapi
+          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL), // Use static faceapi
+        ]);
+        setModelsLoaded(true);
+        console.log('Face detection models loaded successfully.');
+      } catch (error) {
+        console.error('Error loading face detection models:', error);
+        setModelLoadingError('Failed to load face detection models. Please try reloading.');
+        setModelsLoaded(false);
+      }
+    };
+    loadModels();
+  }, []); // Revert dependencies to just mount
 
-    img.onload = () => {
-      imageRef.current = img
-      const initialZoom = calculateInitialZoom(img.width, img.height)
-      setImageState(prev => ({
+  // Load image and perform face detection (dependent on modelsLoaded)
+  useEffect(() => {
+    if (!uploadedImage || step !== 3) {
+      // Reset detection state
+      setDetectionResult(null);
+      setAutoRotationAngle(0);
+      setImageState((prev: ImageState) => ({ ...prev, rotation: 0 }));
+      return;
+    }
+    if (!modelsLoaded) return; 
+
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+
+    img.onload = async () => {
+      imageRef.current = img;
+      const initialZoom = calculateInitialZoom(img.width, img.height);
+      setImageState((prev: ImageState) => ({ 
         ...prev,
         originalWidth: img.width,
         originalHeight: img.height,
         zoom: initialZoom,
         scale: initialZoom,
-      }))
+        rotation: 0, 
+      }));
+      setAutoRotationAngle(0);
+      setDetectionResult(null);
+
+      // --- Perform face detection --- 
+      setIsDetecting(true);
+      console.log("Performing face detection...");
+      try {
+        // Use static faceapi
+        const detection = await faceapi 
+          .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()) 
+          .withFaceLandmarks();
+
+        if (detection) {
+          // Use static faceapi types
+          const typedDetection = detection; // No assertion needed with static types
+          console.log("Face detected:", typedDetection);
+          setDetectionResult(typedDetection);
+
+          const landmarks = typedDetection.landmarks;
+          const leftEye = landmarks.getLeftEye();
+          const rightEye = landmarks.getRightEye();
+          const leftEyeCenter = getCenterPoint(leftEye);
+          const rightEyeCenter = getCenterPoint(rightEye);
+          const deltaY = rightEyeCenter.y - leftEyeCenter.y;
+          const deltaX = rightEyeCenter.x - leftEyeCenter.x;
+          const angleInRadians = Math.atan2(deltaY, deltaX);
+          let angleInDegrees = angleInRadians * (180 / Math.PI);
+
+          // <-- Try negating the angle -->
+          angleInDegrees = -angleInDegrees;
+
+          console.log(`Calculated rotation angle (adjusted): ${angleInDegrees.toFixed(2)} degrees`);
+          setAutoRotationAngle(angleInDegrees); 
+
+          // Apply auto-rotation
+          setImageState((prev: ImageState) => ({ 
+            ...prev,
+            rotation: angleInDegrees 
+          }));
+
+          // TODO: Calculate detected guideline positions based on landmarks
+          // const nose = landmarks.getNose();
+          // const jaw = landmarks.getJawOutline();
+          // ... calculate guideline positions ...
+          // setDetectedGuidelines(...) 
+
+        } else {
+          console.log("No face detected.");
+          setDetectionResult(null);
+          setAutoRotationAngle(0);
+          setImageState((prev: ImageState) => ({ ...prev, rotation: 0 }));
+        }
+      } catch (error) {
+        console.error("Error during face detection:", error);
+        setDetectionResult(null);
+        setAutoRotationAngle(0);
+        setImageState((prev: ImageState) => ({ ...prev, rotation: 0 }));
+      } finally {
+        setIsDetecting(false);
+        console.log("Face detection finished.");
+      }
+      // --- End face detection ---
+    }
+
+    img.onerror = () => {
+      console.error("Error loading image for detection");
+      setIsDetecting(false); // Ensure loading state is turned off
     }
 
     img.src = uploadedImage
 
     return () => {
       imageRef.current = null
+      // Cleanup if needed
     }
-  }, [uploadedImage, step])
+  }, [uploadedImage, step, modelsLoaded]) // Revert dependencies
 
   // Calculate box dimensions when lines or document changes
   useEffect(() => {
@@ -187,5 +312,10 @@ export const usePhotoEditor = (
     backgroundState,
     setBackgroundState,
     calculateInitialGridLines,
+    modelsLoaded,
+    modelLoadingError,
+    isDetecting,
+    detectionResult,
+    autoRotationAngle,
   }
 } 

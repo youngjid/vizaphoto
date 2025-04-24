@@ -41,6 +41,8 @@ export function PhotoEditor() {
     backgroundState,
     setBackgroundState,
     calculateInitialGridLines,
+    modelsLoaded,
+    modelLoadingError,
   } = usePhotoEditor(uploadedImage, selectedDocument, step)
 
   const { processPhoto } = usePhotoProcessor({
@@ -60,6 +62,7 @@ export function PhotoEditor() {
 
   // Draw canvas when any parameters change
   useEffect(() => {
+    if (!modelsLoaded || modelLoadingError) return;
     if (!canvasRef.current) return
 
     const canvas = canvasRef.current
@@ -82,9 +85,10 @@ export function PhotoEditor() {
     // Always draw overlay and grid lines
     drawOverlay(ctx, canvas.width, canvas.height, boxDimensions)
     drawGridLines(ctx, canvas.width, canvas.height, gridLines, boxDimensions)
-  }, [imageState, gridLines, boxDimensions])
+  }, [imageState, gridLines, boxDimensions, modelsLoaded, modelLoadingError])
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (!modelsLoaded || modelLoadingError) return;
     if (!canvasRef.current) return
 
     const canvas = canvasRef.current
@@ -219,6 +223,25 @@ export function PhotoEditor() {
             </div>
 
             <div className="relative bg-slate-900 rounded-lg p-4">
+              {(!modelsLoaded || modelLoadingError) && (
+                <div className="absolute inset-0 bg-slate-900/80 flex flex-col justify-center items-center z-10 rounded-lg">
+                  {modelLoadingError ? (
+                    <>
+                      <p className="text-red-400 text-lg font-semibold mb-2">Error Loading Models</p>
+                      <p className="text-red-300 text-sm text-center px-4 mb-4">{modelLoadingError}</p>
+                      <Button variant="secondary" onClick={() => window.location.reload()}>
+                        Reload Page
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="h-8 w-8 text-slate-400 animate-spin mb-3" />
+                      <p className="text-slate-400">Loading face detection models...</p>
+                    </>
+                  )}
+                </div>
+              )}
+
               <canvas
                 ref={canvasRef}
                 width={canvasDimensions.displayWidth}
@@ -227,7 +250,7 @@ export function PhotoEditor() {
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
-                className={`w-full h-auto ${dragState.isDragging ? "cursor-move" : "cursor-default"}`}
+                className={`w-full h-auto ${dragState.isDragging ? "cursor-move" : "cursor-default"} ${(!modelsLoaded || modelLoadingError) ? 'opacity-50' : ''}`}
                 style={{
                   imageRendering: '-webkit-optimize-contrast',
                   maxWidth: '100%',
@@ -262,73 +285,77 @@ export function PhotoEditor() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleRotate(-90)}
-                    className="h-8 w-8"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleRotate(90)}
-                    className="h-8 w-8"
-                  >
-                    <RotateCw className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => selectedDocument && calculateInitialGridLines(selectedDocument)}
-                    className="h-8 w-8"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ZoomOut className="h-4 w-4 text-slate-500" />
-                  <Slider
-                    value={[imageState.zoom * 100]}
-                    min={50}
-                    max={200}
-                    step={1}
-                    onValueChange={(value) => handleZoom(value[0] / 100)}
-                    className="w-32"
-                  />
-                  <ZoomIn className="h-4 w-4 text-slate-500" />
+            <div className={`grid grid-cols-2 gap-6 ${(!modelsLoaded || modelLoadingError) ? 'opacity-50 pointer-events-none' : ''}`}>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleRotate(-90)}
+                      className="h-8 w-8"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleRotate(90)}
+                      className="h-8 w-8"
+                    >
+                      <RotateCw className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => selectedDocument && calculateInitialGridLines(selectedDocument)}
+                      className="h-8 w-8"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ZoomOut className="h-4 w-4 text-slate-500" />
+                    <Slider
+                      value={[imageState.zoom * 100]}
+                      min={50}
+                      max={200}
+                      step={1}
+                      onValueChange={(value) => handleZoom(value[0] / 100)}
+                      className="w-32"
+                    />
+                    <ZoomIn className="h-4 w-4 text-slate-500" />
+                  </div>
                 </div>
               </div>
               
-              <div className="flex items-center justify-between border rounded-md p-3 bg-slate-50">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="remove-background"
-                    checked={backgroundState.removeBackground}
-                    onCheckedChange={(value) => setBackgroundState(prev => ({ ...prev, removeBackground: value }))}
-                    disabled={isProcessing || backgroundState.isRemovingBackground}
-                  />
-                  <Label htmlFor="remove-background" className="flex items-center gap-2">
-                    <ImageDown className="h-4 w-4" />
-                    Remove background (white)
-                  </Label>
-                </div>
-                {backgroundState.removeBackground && (
-                  <div className="text-xs text-slate-500">
-                    {backgroundState.isRemovingBackground ? (
-                      <span className="flex items-center">
-                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                        Processing...
-                      </span>
-                    ) : (
-                      "Will remove background after cropping"
-                    )}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between border rounded-md p-3 bg-slate-50">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="remove-background"
+                      checked={backgroundState.removeBackground}
+                      onCheckedChange={(value) => setBackgroundState(prev => ({ ...prev, removeBackground: value }))}
+                      disabled={isProcessing || backgroundState.isRemovingBackground}
+                    />
+                    <Label htmlFor="remove-background" className="flex items-center gap-2">
+                      <ImageDown className="h-4 w-4" />
+                      Remove background (white)
+                    </Label>
                   </div>
-                )}
+                  {backgroundState.removeBackground && (
+                    <div className="text-xs text-slate-500">
+                      {backgroundState.isRemovingBackground ? (
+                        <span className="flex items-center">
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                          Processing...
+                        </span>
+                      ) : (
+                        "Will remove background after cropping"
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
