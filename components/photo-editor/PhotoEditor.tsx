@@ -8,6 +8,7 @@ import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { ZoomIn, ZoomOut, RotateCcw, RotateCw, RefreshCw, Loader2, ImageDown } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { DocumentType } from "@/data/countries"
 import { useAppContext } from "@/context/app-context"
 import { usePhotoEditor } from "./hooks/usePhotoEditor"
@@ -180,179 +181,195 @@ export function PhotoEditor() {
 
   return (
     <div className="max-w-4xl mx-auto mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <Card className="border-slate-200 shadow-sm">
-        <CardContent className="p-6">
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900">Photo Editor</h2>
-                <p className="text-sm text-slate-500 flex items-center gap-2">
-                  <span>{selectedDocument?.name} {selectedDocument && formatDimensions(selectedDocument.dimensions)}</span>
-                  <span>for</span>
-                  <span>{selectedCountry?.name}</span>
-                  {selectedCountry?.flag && (
-                    <Image
-                      src={selectedCountry.flag}
-                      alt={`${selectedCountry.name} flag`}
-                      width={24}
-                      height={16}
-                      className="inline-block"
-                    />
-                  )}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(2)}>
-                  Back to Upload
-                </Button>
-                <Button
-                  onClick={processPhoto}
-                  disabled={isProcessing || backgroundState.isRemovingBackground}
-                  className="px-8"
-                >
-                  {isProcessing || backgroundState.isRemovingBackground ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {backgroundState.isRemovingBackground ? "Removing Background..." : "Processing..."}
-                    </>
-                  ) : (
-                    "Process Photo"
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            <div className="relative bg-slate-900 rounded-lg p-4">
-              {(!modelsLoaded || modelLoadingError) && (
-                <div className="absolute inset-0 bg-slate-900/80 flex flex-col justify-center items-center z-10 rounded-lg">
-                  {modelLoadingError ? (
-                    <>
-                      <p className="text-red-400 text-lg font-semibold mb-2">Error Loading Models</p>
-                      <p className="text-red-300 text-sm text-center px-4 mb-4">{modelLoadingError}</p>
-                      <Button variant="secondary" onClick={() => window.location.reload()}>
-                        Reload Page
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Loader2 className="h-8 w-8 text-slate-400 animate-spin mb-3" />
-                      <p className="text-slate-400">Loading face detection models...</p>
-                    </>
-                  )}
+      <TooltipProvider delayDuration={200}>
+        <Card className="border-slate-200 shadow-sm">
+          <CardContent className="p-6">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">Photo Editor</h2>
+                  <p className="text-sm text-slate-500 flex items-center gap-2">
+                    <span>{selectedDocument?.name} {selectedDocument && formatDimensions(selectedDocument.dimensions)}</span>
+                    <span>for</span>
+                    <span>{selectedCountry?.name}</span>
+                    {selectedCountry?.flag && (
+                      <Image
+                        src={selectedCountry.flag}
+                        alt={`${selectedCountry.name} flag`}
+                        width={24}
+                        height={16}
+                        className="inline-block"
+                      />
+                    )}
+                  </p>
                 </div>
-              )}
-
-              <canvas
-                ref={canvasRef}
-                width={canvasDimensions.displayWidth}
-                height={canvasDimensions.displayHeight}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-                className={`w-full h-auto ${dragState.isDragging ? "cursor-move" : "cursor-default"} ${(!modelsLoaded || modelLoadingError) ? 'opacity-50' : ''}`}
-                style={{
-                  imageRendering: '-webkit-optimize-contrast',
-                  maxWidth: '100%',
-                }}
-              />
-              
-              <canvas
-                ref={highResCanvasRef}
-                width={canvasDimensions.highResWidth}
-                height={canvasDimensions.highResHeight}
-                className="hidden"
-              />
-              
-              <div className="absolute bottom-4 left-4 bg-white/90 p-3 rounded-lg shadow-lg text-sm space-y-1">
-                <p className="font-medium">Drag the colored handles to align:</p>
-                <p className="flex items-center">
-                  <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
-                  Center line with middle of face
-                </p>
-                <p className="flex items-center">
-                  <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
-                  Top red line with crown of head
-                </p>
-                <p className="flex items-center">
-                  <span className="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
-                  Blue line with eyes
-                </p>
-                <p className="flex items-center">
-                  <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
-                  Bottom red line with chin
-                </p>
-              </div>
-            </div>
-
-            <div className={`grid grid-cols-2 gap-6 ${(!modelsLoaded || modelLoadingError) ? 'opacity-50 pointer-events-none' : ''}`}>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleRotate(-90)}
-                      className="h-8 w-8"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleRotate(90)}
-                      className="h-8 w-8"
-                    >
-                      <RotateCw className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <ZoomOut className="h-4 w-4 text-slate-500" />
-                    <Slider
-                      value={[imageState.zoom * 100]}
-                      min={Math.max(10, imageState.initialZoom * 100)}
-                      max={300}
-                      step={1}
-                      onValueChange={(value) => handleZoom(value[0] / 100)}
-                      className="w-32"
-                    />
-                    <ZoomIn className="h-4 w-4 text-slate-500" />
-                  </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setStep(2)}>
+                    Back to Upload
+                  </Button>
+                  <Button
+                    onClick={processPhoto}
+                    disabled={isProcessing || backgroundState.isRemovingBackground}
+                    className="px-8"
+                  >
+                    {isProcessing || backgroundState.isRemovingBackground ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {backgroundState.isRemovingBackground ? "Removing Background..." : "Processing..."}
+                      </>
+                    ) : (
+                      "Process Photo"
+                    )}
+                  </Button>
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between border rounded-md p-3 bg-slate-50">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="remove-background"
-                      checked={backgroundState.removeBackground}
-                      onCheckedChange={(value) => setBackgroundState(prev => ({ ...prev, removeBackground: value }))}
-                      disabled={isProcessing || backgroundState.isRemovingBackground}
-                    />
-                    <Label htmlFor="remove-background" className="flex items-center gap-2">
-                      <ImageDown className="h-4 w-4" />
-                      Remove background (white)
-                    </Label>
+
+              <div className="relative bg-slate-900 rounded-lg p-4">
+                {(!modelsLoaded || modelLoadingError) && (
+                  <div className="absolute inset-0 bg-slate-900/80 flex flex-col justify-center items-center z-10 rounded-lg">
+                    {modelLoadingError ? (
+                      <>
+                        <p className="text-red-400 text-lg font-semibold mb-2">Error Loading Models</p>
+                        <p className="text-red-300 text-sm text-center px-4 mb-4">{modelLoadingError}</p>
+                        <Button variant="secondary" onClick={() => window.location.reload()}>
+                          Reload Page
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Loader2 className="h-8 w-8 text-slate-400 animate-spin mb-3" />
+                        <p className="text-slate-400">Loading face detection models...</p>
+                      </>
+                    )}
                   </div>
-                  {backgroundState.removeBackground && (
-                    <div className="text-xs text-slate-500">
-                      {backgroundState.isRemovingBackground ? (
-                        <span className="flex items-center">
-                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                          Processing...
-                        </span>
-                      ) : (
-                        "Will remove background after cropping"
-                      )}
+                )}
+
+                <canvas
+                  ref={canvasRef}
+                  width={canvasDimensions.displayWidth}
+                  height={canvasDimensions.displayHeight}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  className={`w-full h-auto ${dragState.isDragging ? "cursor-move" : "cursor-default"} ${(!modelsLoaded || modelLoadingError) ? 'opacity-50' : ''}`}
+                  style={{
+                    imageRendering: '-webkit-optimize-contrast',
+                    maxWidth: '100%',
+                  }}
+                />
+                
+                <canvas
+                  ref={highResCanvasRef}
+                  width={canvasDimensions.highResWidth}
+                  height={canvasDimensions.highResHeight}
+                  className="hidden"
+                />
+                
+                <div className="absolute bottom-4 left-4 bg-white/90 p-3 rounded-lg shadow-lg text-sm space-y-1">
+                  <p className="font-medium">Drag the colored handles to align:</p>
+                  <p className="flex items-center">
+                    <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                    Center line with middle of face
+                  </p>
+                  <p className="flex items-center">
+                    <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                    Top red line with crown of head
+                  </p>
+                  <p className="flex items-center">
+                    <span className="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
+                    Blue line with eyes
+                  </p>
+                  <p className="flex items-center">
+                    <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                    Bottom red line with chin
+                  </p>
+                </div>
+              </div>
+
+              <div className={`grid grid-cols-2 gap-6 ${(!modelsLoaded || modelLoadingError) ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleRotate(-1)}
+                            className="h-8 w-8"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Rotate Left 1°</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleRotate(1)}
+                            className="h-8 w-8"
+                          >
+                            <RotateCw className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Rotate Right 1°</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
-                  )}
+                    <div className="flex items-center gap-2">
+                      <ZoomOut className="h-4 w-4 text-slate-500" />
+                      <Slider
+                        value={[imageState.zoom * 100]}
+                        min={Math.max(10, imageState.initialZoom * 100)}
+                        max={300}
+                        step={1}
+                        onValueChange={(value) => handleZoom(value[0] / 100)}
+                        className="w-32"
+                      />
+                      <ZoomIn className="h-4 w-4 text-slate-500" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between border rounded-md p-3 bg-slate-50">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="remove-background"
+                        checked={backgroundState.removeBackground}
+                        onCheckedChange={(value) => setBackgroundState(prev => ({ ...prev, removeBackground: value }))}
+                        disabled={isProcessing || backgroundState.isRemovingBackground}
+                      />
+                      <Label htmlFor="remove-background" className="flex items-center gap-2">
+                        <ImageDown className="h-4 w-4" />
+                        Remove background (white)
+                      </Label>
+                    </div>
+                    {backgroundState.removeBackground && (
+                      <div className="text-xs text-slate-500">
+                        {backgroundState.isRemovingBackground ? (
+                          <span className="flex items-center">
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            Processing...
+                          </span>
+                        ) : (
+                          "Will remove background after cropping"
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </TooltipProvider>
     </div>
   )
 } 
