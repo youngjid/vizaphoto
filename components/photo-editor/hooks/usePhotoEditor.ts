@@ -338,11 +338,14 @@ export const usePhotoEditor = (
           const eyeLevelY = (getCenterPoint(leftEye).y + getCenterPoint(rightEye).y) / 2;
           const chinY = jaw[8].y; 
           
-          // Revert to eye-to-chin distance calculation with 0.8 factor (matching example script)
-          const eyeToChinDistance = chinY - eyeLevelY;
-          const crownY = Math.max(0, eyeLevelY - (eyeToChinDistance * 0.8)); 
+          // Estimate crown (P) based on nose bridge (M) and chin (Q) distance
+          const noseTopY = nose[0].y; // Approx M point Y
+          const chinPointY = chinY;   // Approx Q point Y
+          const chinToNoseYDist = chinPointY - noseTopY; // Distance MQ
+          // Estimate crown Y = M.y - MQ distance
+          const crownY = Math.max(0, noseTopY - chinToNoseYDist); 
           
-          const centerPointX = nose[3].x; // Use nose bridge point for center
+          const centerPointX = nose[3].x; // Use nose bridge point for center X
 
           const normTopLine = crownY / tempCanvas.height;
           const normMiddleLine = eyeLevelY / tempCanvas.height;
