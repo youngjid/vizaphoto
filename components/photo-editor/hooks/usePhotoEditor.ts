@@ -85,6 +85,8 @@ export const usePhotoEditor = (
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [modelLoadingError, setModelLoadingError] = useState<string | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
+  // Add state to track if initial alignment is done
+  const [isInitialAlignmentDone, setIsInitialAlignmentDone] = useState(false);
 
   // Calculate initial zoom to fit image in view
   const calculateInitialZoom = (imgWidth: number, imgHeight: number) => {
@@ -174,6 +176,8 @@ export const usePhotoEditor = (
       // Reset state if dependencies change or step is wrong
       imageRef.current = null;
       setImageState((prev) => ({ ...prev, rotation: 0, originalWidth: 0, originalHeight: 0, zoom: 1, scale: 1, initialZoom: 1 }));
+      // Reset initial alignment flag
+      setIsInitialAlignmentDone(false); 
       // Don't reset guidelines here, let the other effect handle defaults
       // if (selectedDocument) calculateInitialGridLines(selectedDocument);
       // No need to set isDetecting false here, handled by guideline effect
@@ -245,6 +249,8 @@ export const usePhotoEditor = (
         // Keep defaults on error
       } finally {
         // Set detecting false AFTER rotation is attempted/set
+        // Mark initial alignment as done regardless of detection success
+        setIsInitialAlignmentDone(true);
         // This will trigger the guideline calculation effect
         // If rotation was set, that effect uses it.
         // If not, it uses 0 rotation.
@@ -272,8 +278,8 @@ export const usePhotoEditor = (
 
   // --- NEW Effect to Calculate Guidelines AFTER Rotation is Set --- 
   useEffect(() => {
-    // Run only if rotation is potentially set, we have image/canvas/models, and are on step 3
-    if (step !== 3 || !imageRef.current || !canvasRef.current || !modelsLoaded || !faceapi) {
+    // Run only AFTER initial alignment attempt is done, AND we have image/canvas/models, and are on step 3
+    if (!isInitialAlignmentDone || step !== 3 || !imageRef.current || !canvasRef.current || !modelsLoaded || !faceapi) {
         // If dependencies aren't ready, ensure detection stops
         if (isDetecting) setIsDetecting(false);
         return;
@@ -368,8 +374,9 @@ export const usePhotoEditor = (
     // Call the async function
     calculateAndSetGuidelines();
 
-  // Dependencies: Run when rotation changes, or other core elements needed for calculation change.
-  }, [imageState.rotation, imageRef.current, canvasRef.current, modelsLoaded, faceapi, step, selectedDocument]); 
+  // Dependencies: Run when initial alignment is marked done, or other core elements needed for calculation change.
+  // REMOVED imageState.rotation from dependencies.
+  }, [isInitialAlignmentDone, imageRef.current, canvasRef.current, modelsLoaded, faceapi, step, selectedDocument]); 
 
   // Calculate box dimensions when lines or document changes
   useEffect(() => {
