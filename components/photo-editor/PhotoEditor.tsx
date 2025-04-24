@@ -305,14 +305,6 @@ export function PhotoEditor() {
                     >
                       <RotateCw className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => selectedDocument && calculateInitialGridLines(selectedDocument)}
-                      className="h-8 w-8"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
                   </div>
                   <div className="flex items-center gap-2">
                     <ZoomOut className="h-4 w-4 text-slate-500" />
