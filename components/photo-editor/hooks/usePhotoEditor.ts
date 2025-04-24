@@ -16,10 +16,12 @@ import type {
 import { drawImage } from "../utils/canvas"
 
 // Use original type definition (assuming face-api.js types are installed/resolved)
-type FaceDetectionResult = faceapi.WithFaceLandmarks<{ detection: faceapi.FaceDetection }, faceapi.FaceLandmarks68>
+// Revert FaceDetectionResult definition temporarily if namespace errors persist
+// type FaceDetectionResult = faceapi.WithFaceLandmarks<{ detection: faceapi.FaceDetection }, faceapi.FaceLandmarks68>
+interface FaceDetectionResult { detection: any; landmarks: any; }
 
 // Helper function to get center point of landmarks
-const getCenterPoint = (landmarks: faceapi.Point[]) => {
+const getCenterPoint = (landmarks: any[]) => {
   if (!landmarks || landmarks.length === 0) {
     return { x: 0, y: 0 };
   }
@@ -171,16 +173,17 @@ export const usePhotoEditor = (
     loadModels();
   }, []); // Revert dependencies to just mount
 
-  // Load image and perform face detection (dependent on modelsLoaded)
+  // Load image, detect face, calculate rotation, THEN calculate guidelines
   useEffect(() => {
     if (!uploadedImage || step !== 3) {
       // Reset detection state
       setDetectionResult(null);
       setAutoRotationAngle(0);
+      // Don't reset gridLines here, keep document defaults until face detected
       setImageState((prev: ImageState) => ({ ...prev, rotation: 0 }));
       return;
     }
-    if (!modelsLoaded) return; 
+    if (!modelsLoaded) return;
 
     const img = new window.Image();
     img.crossOrigin = "anonymous";
@@ -188,6 +191,7 @@ export const usePhotoEditor = (
     img.onload = async () => {
       imageRef.current = img;
       const initialZoom = calculateInitialZoom(img.width, img.height);
+      // Apply initial zoom but reset rotation
       setImageState((prev: ImageState) => ({ 
         ...prev,
         originalWidth: img.width,
@@ -198,23 +202,22 @@ export const usePhotoEditor = (
       }));
       setAutoRotationAngle(0);
       setDetectionResult(null);
+      // Reset guidelines to document defaults initially
+      if (selectedDocument) calculateInitialGridLines(selectedDocument);
 
-      // --- Perform face detection --- 
+      // --- Perform INITIAL face detection for ROTATION --- 
       setIsDetecting(true);
-      console.log("Performing face detection...");
+      console.log("Performing initial face detection for rotation...");
+      let detectedRotation = 0;
       try {
-        // Use static faceapi
         const detection = await faceapi 
           .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()) 
           .withFaceLandmarks();
 
         if (detection) {
-          // Use static faceapi types
-          const typedDetection = detection; // No assertion needed with static types
-          console.log("Face detected:", typedDetection);
-          setDetectionResult(typedDetection);
-
-          const landmarks = typedDetection.landmarks;
+          console.log("Initial face detected:", detection);
+          // Calculate rotation angle (negated)
+          const landmarks = detection.landmarks;
           const leftEye = landmarks.getLeftEye();
           const rightEye = landmarks.getRightEye();
           const leftEyeCenter = getCenterPoint(leftEye);
@@ -222,56 +225,143 @@ export const usePhotoEditor = (
           const deltaY = rightEyeCenter.y - leftEyeCenter.y;
           const deltaX = rightEyeCenter.x - leftEyeCenter.x;
           const angleInRadians = Math.atan2(deltaY, deltaX);
-          let angleInDegrees = angleInRadians * (180 / Math.PI);
-
-          // <-- Try negating the angle -->
-          angleInDegrees = -angleInDegrees;
-
-          console.log(`Calculated rotation angle (adjusted): ${angleInDegrees.toFixed(2)} degrees`);
-          setAutoRotationAngle(angleInDegrees); 
-
-          // Apply auto-rotation
+          detectedRotation = -(angleInRadians * (180 / Math.PI)); // Negate here
+          console.log(`Calculated rotation angle (adjusted): ${detectedRotation.toFixed(2)} degrees`);
+          setAutoRotationAngle(detectedRotation);
+          
+          // --- Apply auto-rotation --- 
           setImageState((prev: ImageState) => ({ 
             ...prev,
-            rotation: angleInDegrees 
+            rotation: detectedRotation 
           }));
-
-          // TODO: Calculate detected guideline positions based on landmarks
-          // const nose = landmarks.getNose();
-          // const jaw = landmarks.getJawOutline();
-          // ... calculate guideline positions ...
-          // setDetectedGuidelines(...) 
+          
+          // Now, we need to detect again on the rotated image for accurate guideline placement
+          // This will be handled in a separate effect triggered by rotation change
 
         } else {
-          console.log("No face detected.");
-          setDetectionResult(null);
-          setAutoRotationAngle(0);
-          setImageState((prev: ImageState) => ({ ...prev, rotation: 0 }));
+          console.log("No face detected for rotation.");
+          // Keep default rotation (0) and default guidelines
         }
       } catch (error) {
-        console.error("Error during face detection:", error);
-        setDetectionResult(null);
-        setAutoRotationAngle(0);
-        setImageState((prev: ImageState) => ({ ...prev, rotation: 0 }));
+        console.error("Error during initial face detection:", error);
       } finally {
-        setIsDetecting(false);
-        console.log("Face detection finished.");
+        // Don't set isDetecting false yet, guideline detection follows
       }
-      // --- End face detection ---
-    }
+      // --- End initial detection ---
+    };
 
     img.onerror = () => {
-      console.error("Error loading image for detection");
-      setIsDetecting(false); // Ensure loading state is turned off
+      console.error("Error loading image");
+      setIsDetecting(false); 
     }
 
-    img.src = uploadedImage
+    img.src = uploadedImage;
 
-    return () => {
-      imageRef.current = null
-      // Cleanup if needed
+    return () => { imageRef.current = null; };
+  }, [uploadedImage, step, modelsLoaded, selectedDocument]); // Add selectedDocument
+
+  // --- Effect to Calculate Guidelines AFTER Rotation is Set --- 
+  useEffect(() => {
+    // Run only if we have a loaded image, models, and canvas
+    if (!imageRef.current || !modelsLoaded || !canvasRef.current || !faceapi) {
+      setIsDetecting(false); // Ensure detection stops if dependencies missing
+      return;
     }
-  }, [uploadedImage, step, modelsLoaded]) // Revert dependencies
+    // Only run guideline detection after initial detection tried (indicated by isDetecting)
+    // and image is loaded
+    if (!isDetecting) return; 
+
+    console.log("Calculating guidelines based on current rotation...");
+    const calculateAndSetGuidelines = async () => {
+      try {
+        const canvas = canvasRef.current!;
+        const image = imageRef.current!;
+        
+        // Create a temporary canvas to draw the rotated/scaled image
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width; // Use display dimensions
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d')!;
+        
+        // Draw the image onto the temp canvas using the current state (rotation, zoom)
+        // Mimic drawImage logic but on temp canvas
+        const scale = imageState.zoom;
+        const imgWidth = image.naturalWidth * scale;
+        const imgHeight = image.naturalHeight * scale;
+        const centerX = tempCanvas.width / 2;
+        const centerY = tempCanvas.height / 2;
+        tempCtx.fillStyle = "white";
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.save();
+        tempCtx.translate(centerX, centerY);
+        tempCtx.rotate((imageState.rotation * Math.PI) / 180);
+        // Use naturalWidth/Height here for source image dimensions
+        tempCtx.drawImage(image, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
+        tempCtx.restore();
+        
+        // --- Detect face on the TRANSFORMED image --- 
+        console.log("Performing detection on transformed image for guidelines...");
+        // Use 'any' for faceapi temporarily if namespace errors persist
+        const faceapiAny = faceapi as any;
+        const rotatedDetection = await faceapiAny
+          .detectSingleFace(tempCanvas, new faceapiAny.TinyFaceDetectorOptions())
+          .withFaceLandmarks();
+
+        if (rotatedDetection) {
+          console.log("Face detected on transformed image:", rotatedDetection);
+          const landmarks = rotatedDetection.landmarks;
+          const leftEye = landmarks.getLeftEye();
+          const rightEye = landmarks.getRightEye();
+          const nose = landmarks.getNose();
+          const jaw = landmarks.getJawOutline();
+
+          // Calculate guideline positions based on these landmarks (now relative to canvas)
+          const eyeLevelY = (getCenterPoint(leftEye).y + getCenterPoint(rightEye).y) / 2;
+          const chinY = jaw[8].y; // Bottom of jawline
+          const eyeToChinDistance = chinY - eyeLevelY;
+          // Ensure crown doesn't go above 0
+          const crownY = Math.max(0, eyeLevelY - (eyeToChinDistance * 0.8)); 
+          // Use nose bridge or similar for center X
+          const centerX = nose[3].x; // Point on the nose bridge
+
+          // Normalize to [0, 1] based on canvas dimensions
+          const normTopLine = crownY / tempCanvas.height;
+          const normMiddleLine = eyeLevelY / tempCanvas.height;
+          const normBottomLine = chinY / tempCanvas.height;
+          const normCenterLine = centerX / tempCanvas.width;
+
+          console.log("Setting new gridlines:", { normTopLine, normMiddleLine, normBottomLine, normCenterLine });
+          
+          // Update the gridLines state
+          setGridLines({
+            topLine: normTopLine,
+            middleLine: normMiddleLine,
+            bottomLine: normBottomLine,
+            centerLine: normCenterLine,
+          });
+
+        } else {
+          console.log("No face detected on transformed image, using default guidelines.");
+          // Optionally reset to default if no face found after rotation
+          if (selectedDocument) calculateInitialGridLines(selectedDocument);
+        }
+      } catch (error) {
+        console.error("Error during guideline calculation detection:", error);
+        // Optionally reset to default on error
+        if (selectedDocument) calculateInitialGridLines(selectedDocument);
+      } finally {
+        setIsDetecting(false); // Detection process finished
+        console.log("Guideline calculation finished.");
+      }
+    };
+    
+    // Debounce or delay slightly to allow rotation state to apply? Maybe not needed.
+    calculateAndSetGuidelines();
+
+  // Trigger this effect when the auto-rotation angle is determined, 
+  // or if the image or models change.
+  // Using imageState.rotation ensures it runs after rotation is applied.
+  }, [imageState.rotation, imageRef.current, modelsLoaded, canvasRef.current, faceapi, selectedDocument]); 
 
   // Calculate box dimensions when lines or document changes
   useEffect(() => {
