@@ -44,6 +44,8 @@ export function PhotoEditor() {
     calculateInitialGridLines,
     modelsLoaded,
     modelLoadingError,
+    isDetecting,
+    triggerGuidelineRecalculation,
   } = usePhotoEditor(uploadedImage, selectedDocument, step)
 
   const { processPhoto } = usePhotoProcessor({
@@ -323,6 +325,22 @@ export function PhotoEditor() {
                       </Tooltip>
                     </div>
                     <div className="flex items-center gap-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={triggerGuidelineRecalculation}
+                            disabled={isDetecting}
+                            className="h-8 w-8"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Re-align Guidelines</p>
+                        </TooltipContent>
+                      </Tooltip>
                       <ZoomOut className="h-4 w-4 text-slate-500" />
                       <Slider
                         value={[imageState.zoom * 100]}

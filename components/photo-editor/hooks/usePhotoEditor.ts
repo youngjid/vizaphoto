@@ -87,6 +87,8 @@ export const usePhotoEditor = (
   const [isDetecting, setIsDetecting] = useState(false);
   // Add state to track if initial alignment is done
   const [isInitialAlignmentDone, setIsInitialAlignmentDone] = useState(false);
+  // Add state to manually trigger recalculation
+  const [recalculationTrigger, setRecalculationTrigger] = useState(0);
 
   // Calculate initial zoom to fit image in view
   const calculateInitialZoom = (imgWidth: number, imgHeight: number) => {
@@ -178,6 +180,8 @@ export const usePhotoEditor = (
       setImageState((prev) => ({ ...prev, rotation: 0, originalWidth: 0, originalHeight: 0, zoom: 1, scale: 1, initialZoom: 1 }));
       // Reset initial alignment flag
       setIsInitialAlignmentDone(false); 
+      // Reset trigger counter
+      setRecalculationTrigger(0);
       // Don't reset guidelines here, let the other effect handle defaults
       // if (selectedDocument) calculateInitialGridLines(selectedDocument);
       // No need to set isDetecting false here, handled by guideline effect
@@ -379,7 +383,8 @@ export const usePhotoEditor = (
 
   // Dependencies: Run when initial alignment is marked done, or other core elements needed for calculation change.
   // REMOVED imageState.rotation from dependencies.
-  }, [isInitialAlignmentDone, imageRef.current, canvasRef.current, modelsLoaded, faceapi, step, selectedDocument]); 
+  // Added recalculationTrigger dependency.
+  }, [isInitialAlignmentDone, recalculationTrigger, imageRef.current, canvasRef.current, modelsLoaded, faceapi, step, selectedDocument]); 
 
   // Calculate box dimensions when lines or document changes
   useEffect(() => {
@@ -424,5 +429,7 @@ export const usePhotoEditor = (
     modelLoadingError,
     isDetecting,
     setIsDetecting,
+    // Function to trigger recalculation
+    triggerGuidelineRecalculation: () => setRecalculationTrigger(prev => prev + 1),
   }
 } 
