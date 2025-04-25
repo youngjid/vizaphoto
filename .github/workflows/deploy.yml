@@ -1,0 +1,40 @@
+name: Deploy Website via FTP
+
+on:
+  push:
+    branches:
+      - main # Or whichever branch you want to trigger deployment from
+
+jobs:
+  web-deploy:
+    name: Deploy to cPanel
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Or your preferred Node.js LTS version
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci # 'ci' is generally recommended for CI/CD for faster, consistent installs
+
+      # IMPORTANT: This assumes your build script generates static files in './out'
+      # Ensure 'output: "export"' is in your next.config.js
+      - name: Build static website
+        run: npm run build
+
+      - name: Sync files via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }} # Use a secret for the server address
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./out/ # IMPORTANT: Source directory is the static export 'out' folder
+          server-dir: /home/growthno/vizaphoto_repo/ # Destination directory on your server
+          # Optional: Add flags for cleanup etc. if needed
+          # ftp-delete-removed: true # Uncomment to delete files on server not present in ./out
+          # ftp-ignore-dirs: .git*,.github* # Example: Ignore certain directories 
