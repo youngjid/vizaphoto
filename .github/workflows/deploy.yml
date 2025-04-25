@@ -30,11 +30,11 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps # Try using FTPS (explicit)
-          port: 21 # Default explicit FTPS port
+          # protocol: ftps # Reverted - Standard FTP is fine
+          # port: 21 # Reverted - Use default port
           local-dir: ./ # Upload repository root
           server-dir: ./ # Target directory relative to FTP user's root
-          passive: true # Use Passive mode to avoid firewall issues
+          passive: true # Use Passive mode (Essential for firewalls)
           exclude: | # Exclude files not needed on the server
             **/.git*
             **/.github*
