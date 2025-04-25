@@ -31,7 +31,8 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./ # Upload repository root
-          server-dir: /home/growthno/vizaphoto_repo/ # Destination for source code
+          server-dir: ./ # Target directory relative to FTP user's root
+          passive: true # Use Passive mode to avoid firewall issues
           exclude: | # Exclude files not needed on the server
             **/.git*
             **/.github*
