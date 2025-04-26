@@ -12,91 +12,95 @@ export class PrintLayoutService {
     documentType: DocumentType
   ): PrintLayout {
     const { width: photoWidthPx, height: photoHeightPx } = this.getPhotoSizeInPixels(documentType.dimensions);
+    const pageWidth = this.PAGE_WIDTH_PX;
+    const pageHeight = this.PAGE_HEIGHT_PX;
 
-    // 1. Determine max grid & orientation
-    const arrangement = this.calculateOptimalArrangement(
-      photoWidthPx,
-      photoHeightPx
-    );
+    // Try portrait arrangement (no rotation)
+    const colsPortrait = Math.floor(pageWidth / photoWidthPx);
+    const rowsPortrait = Math.floor(pageHeight / photoHeightPx);
+    const countPortrait = colsPortrait * rowsPortrait;
 
-    if (arrangement.total === 0) {
-        return {
-            pageSize: { width: this.PAGE_WIDTH_PX, height: this.PAGE_HEIGHT_PX, dpi: this.DPI },
-            photos: [],
-            cuttingGuides: []
-        };
+    // Try landscape arrangement (no rotation, just swap photo dimensions)
+    const colsLandscape = Math.floor(pageWidth / photoHeightPx);
+    const rowsLandscape = Math.floor(pageHeight / photoWidthPx);
+    const countLandscape = colsLandscape * rowsLandscape;
+
+    // Determine arrangement based on image orientation
+    let slotWidth, slotHeight, cols, rows;
+
+    // If the image is portrait, only use portrait arrangement
+    if (photoWidthPx < photoHeightPx) {
+      slotWidth = photoWidthPx;
+      slotHeight = photoHeightPx;
+      cols = colsPortrait;
+      rows = rowsPortrait;
+    } else {
+      // If the image is landscape or square, use the arrangement that fits the most
+      if (countPortrait >= countLandscape) {
+        slotWidth = photoWidthPx;
+        slotHeight = photoHeightPx;
+        cols = colsPortrait;
+        rows = rowsPortrait;
+      } else {
+        slotWidth = photoHeightPx;
+        slotHeight = photoWidthPx;
+        cols = colsLandscape;
+        rows = rowsLandscape;
+      }
     }
 
-    const finalPhotoWidth = arrangement.isRotated ? photoHeightPx : photoWidthPx;
-    const finalPhotoHeight = arrangement.isRotated ? photoWidthPx : photoHeightPx;
-    const rows = arrangement.rows;
-    const cols = arrangement.cols;
-
-    // 2. Calculate space used by photos ONLY
-    const totalPhotoBlockWidth = cols * finalPhotoWidth;
-    const totalPhotoBlockHeight = rows * finalPhotoHeight;
-
-    // 3. Calculate centering margins
-    const horizontalMargin = (this.PAGE_WIDTH_PX - totalPhotoBlockWidth) / 2;
-    const verticalMargin = (this.PAGE_HEIGHT_PX - totalPhotoBlockHeight) / 2;
-
-    // Ensure margins are not negative (shouldn't happen with correct arrangement calc)
-    if (horizontalMargin < 0 || verticalMargin < 0) {
-      console.error("Layout calculation resulted in negative margins. Check arrangement logic.");
-       // Fallback to a single photo if something went wrong
+    if (cols === 0 || rows === 0) {
+      // Fallback: only one photo centered
        return { 
-            pageSize: { width: this.PAGE_WIDTH_PX, height: this.PAGE_HEIGHT_PX, dpi: this.DPI },
-             photos: [{
-                x: (this.PAGE_WIDTH_PX - finalPhotoWidth) / 2,
-                y: (this.PAGE_HEIGHT_PX - finalPhotoHeight) / 2,
-                width: finalPhotoWidth,
-                height: finalPhotoHeight,
+        pageSize: { width: pageWidth, height: pageHeight, dpi: this.DPI },
+        photos: [
+          {
+            x: (pageWidth - slotWidth) / 2,
+            y: (pageHeight - slotHeight) / 2,
+            width: slotWidth,
+            height: slotHeight,
                 rotation: 0
-             }],
+          }
+        ],
             cuttingGuides: []
         };
     }
 
-    // 4 & 5. Calculate spacing (distribute space *within* the block if possible)
-    // Spacing is currently implicitly zero as we center the entire block.
-    // To add spacing, we would need to shrink the photo block slightly
-    // and distribute that space. For now, prioritize max fit (edge-to-edge within the block).
-    const horizontalSpacing = 0;
-    const verticalSpacing = 0;
+    // Center the grid
+    const totalBlockWidth = cols * slotWidth;
+    const totalBlockHeight = rows * slotHeight;
+    const marginX = (pageWidth - totalBlockWidth) / 2;
+    const marginY = (pageHeight - totalBlockHeight) / 2;
 
+    // Generate slot positions
     const placements: PhotoPlacement[] = [];
-    const guides: CuttingGuide[] = [];
-
-    // Generate photo placements
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
         placements.push({
-          x: horizontalMargin + c * (finalPhotoWidth + horizontalSpacing),
-          y: verticalMargin + r * (finalPhotoHeight + verticalSpacing),
-          width: finalPhotoWidth,
-          height: finalPhotoHeight,
-          rotation: 0
+          x: marginX + col * slotWidth,
+          y: marginY + row * slotHeight,
+          width: slotWidth,
+          height: slotHeight,
+          rotation: 0 // Only rotate if you want to print rotated images
         });
       }
     }
 
-    // Add cutting guides based on final placements (edge-to-edge)
-    this.addCuttingGuides(
-      guides,
-      rows,
-      cols,
-      horizontalMargin,
-      verticalMargin,
-      finalPhotoWidth,
-      finalPhotoHeight
-    );
+    // Add cutting guides
+    const guides: CuttingGuide[] = [];
+    // Horizontal guides
+    for (let row = 0; row <= rows; row++) {
+      const y = marginY + row * slotHeight;
+      guides.push({ type: 'horizontal', position: y, length: pageWidth });
+    }
+    // Vertical guides
+    for (let col = 0; col <= cols; col++) {
+      const x = marginX + col * slotWidth;
+      guides.push({ type: 'vertical', position: x, length: pageHeight });
+    }
 
     return {
-      pageSize: {
-        width: this.PAGE_WIDTH_PX,
-        height: this.PAGE_HEIGHT_PX,
-        dpi: this.DPI
-      },
+      pageSize: { width: pageWidth, height: pageHeight, dpi: this.DPI },
       photos: placements,
       cuttingGuides: guides
     };
@@ -124,73 +128,6 @@ export class PrintLayoutService {
       heightPx = Math.round(height);
     }
     return { width: widthPx, height: heightPx };
-  }
-
-  // Calculates the max number of photos that fit, ignoring spacing/margins initially
-  private calculateOptimalArrangement(
-    photoWidthPx: number,
-    photoHeightPx: number
-  ): { rows: number; cols: number; total: number; isRotated: boolean } {
-    let bestArrangement = { rows: 0, cols: 0, total: 0, isRotated: false };
-
-    const checkFit = (pWidth: number, pHeight: number): { rows: number; cols: number; total: number } => {
-      if (pWidth <= 0 || pHeight <= 0 || pWidth > this.PAGE_WIDTH_PX || pHeight > this.PAGE_HEIGHT_PX) {
-        return { rows: 0, cols: 0, total: 0 };
-      }
-      const maxCols = Math.floor(this.PAGE_WIDTH_PX / pWidth);
-      const maxRows = Math.floor(this.PAGE_HEIGHT_PX / pHeight);
-      return { rows: maxRows, cols: maxCols, total: maxRows * maxCols };
-    };
-
-    // Check normal orientation
-    const normalFit = checkFit(photoWidthPx, photoHeightPx);
-    if (normalFit.total > bestArrangement.total) {
-      bestArrangement = { ...normalFit, isRotated: false };
-    }
-
-    // Check rotated orientation
-    const rotatedFit = checkFit(photoHeightPx, photoWidthPx);
-    if (rotatedFit.total > bestArrangement.total) {
-      bestArrangement = { ...rotatedFit, isRotated: true };
-    } else if (rotatedFit.total === bestArrangement.total && bestArrangement.total > 0) {
-      // If totals are equal, prefer non-rotated (already chosen if normalFit.total > 0)
-      // No action needed unless normalFit.total was 0
-       if (bestArrangement.total === 0) {
-            bestArrangement = { ...rotatedFit, isRotated: true }; // Choose rotated if normal didn't fit at all
-       }
-    }
-
-    return bestArrangement;
-  }
-
-  private addCuttingGuides(
-    guides: CuttingGuide[],
-    rows: number,
-    cols: number,
-    horizontalMargin: number,
-    verticalMargin: number,
-    photoWidth: number, // Use final dimensions
-    photoHeight: number // Use final dimensions
-  ): void {
-    // Horizontal guides (at the edges of each row)
-    for (let row = 0; row <= rows; row++) {
-      const y = verticalMargin + row * photoHeight;
-      guides.push({
-        type: 'horizontal',
-        position: y,
-        length: this.PAGE_WIDTH_PX
-      });
-    }
-
-    // Vertical guides (at the edges of each column)
-    for (let col = 0; col <= cols; col++) {
-      const x = horizontalMargin + col * photoWidth;
-      guides.push({
-        type: 'vertical',
-        position: x,
-        length: this.PAGE_HEIGHT_PX
-      });
-    }
   }
 
   validatePrintQuality(layout: PrintLayout): boolean {

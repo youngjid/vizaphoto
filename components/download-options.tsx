@@ -52,7 +52,6 @@ export function DownloadOptions() {
     // Create a temporary image element to load the image
     const img = new window.Image(); // Use window.Image to avoid conflict with Next.js Image
     img.crossOrigin = 'anonymous'; // Enable CORS if needed
-
     img.onload = () => {
       // Create a canvas to draw the image
       const canvas = document.createElement('canvas');
@@ -79,9 +78,7 @@ export function DownloadOptions() {
         URL.revokeObjectURL(url);
       }, 'image/jpeg', 0.95);
     };
-
     img.onerror = () => {
-      console.error("Failed to load image for digital download");
       // Fallback to direct download if canvas approach fails
       const link = document.createElement('a');
       link.href = processedImage;
@@ -90,9 +87,13 @@ export function DownloadOptions() {
       link.click();
       document.body.removeChild(link);
     };
-
-    // Add a timestamp to prevent caching
-    img.src = `${processedImage}?t=${Date.now()}`;
+    // Add a timestamp to prevent caching, but only for non-data URLs
+    let imgSrc = processedImage;
+    const isDataUrl = imgSrc.startsWith('data:');
+    if (!isDataUrl) {
+      imgSrc += `?t=${Date.now()}`;
+    }
+    img.src = imgSrc;
   }
 
   const handlePrintDownload = () => {
@@ -176,7 +177,13 @@ export function DownloadOptions() {
       link.click();
       document.body.removeChild(link);
     };
-    img.src = `${processedImage}?t=${Date.now()}`;
+    // Add a timestamp to prevent caching, but only for non-data URLs
+    let imgSrc = processedImage;
+    const isDataUrl = imgSrc.startsWith('data:');
+    if (!isDataUrl) {
+      imgSrc += `?t=${Date.now()}`;
+    }
+    img.src = imgSrc;
   }
 
   return (
