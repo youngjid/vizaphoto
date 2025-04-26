@@ -19,9 +19,9 @@ export function DownloadOptions() {
     if (step === 4 && processedImage && selectedDocument) {
       // Avoid recalculating if layout already exists for the current doc/image
       if (!printLayout) {
-         console.log("Calculating print layout..."); // Added for debugging
-         const printLayoutService = new PrintLayoutService();
-         setPrintLayout(printLayoutService.calculateLayout(selectedDocument));
+        console.log("Calculating print layout..."); // Added for debugging
+        const printLayoutService = new PrintLayoutService();
+        setPrintLayout(printLayoutService.calculateLayout(selectedDocument));
       }
     } else {
       // Reset layout if step changes or data is missing
@@ -30,8 +30,8 @@ export function DownloadOptions() {
         setPrintLayout(null);
       }
     }
-  // Dependencies: Recalculate only when step, image, or document changes.
-  // Excluded printLayout from deps to prevent loops after setting it.
+    // Dependencies: Recalculate only when step, image, or document changes.
+    // Excluded printLayout from deps to prevent loops after setting it.
   }, [step, processedImage, selectedDocument]);
 
   // Early return *after* all hooks have been called
@@ -48,12 +48,51 @@ export function DownloadOptions() {
 
   const handleDigitalDownload = () => {
     if (!processedImage) return; // Guard clause
-    const link = document.createElement("a")
-    link.href = processedImage
-    link.download = `vizaphoto-${selectedCountry?.code}-${selectedDocument?.id}-digital.jpg`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+
+    // Create a temporary image element to load the image
+    const img = new window.Image(); // Use window.Image to avoid conflict with Next.js Image
+    img.crossOrigin = 'anonymous'; // Enable CORS if needed
+
+    img.onload = () => {
+      // Create a canvas to draw the image
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Draw the image
+      ctx.drawImage(img, 0, 0);
+
+      // Convert to blob and download
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `vizaphoto-${selectedCountry?.code}-${selectedDocument?.id}-digital.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 'image/jpeg', 0.95);
+    };
+
+    img.onerror = () => {
+      console.error("Failed to load image for digital download");
+      // Fallback to direct download if canvas approach fails
+      const link = document.createElement('a');
+      link.href = processedImage;
+      link.download = `vizaphoto-${selectedCountry?.code}-${selectedDocument?.id}-digital.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    // Add a timestamp to prevent caching
+    img.src = `${processedImage}?t=${Date.now()}`;
   }
 
   const handlePrintDownload = () => {
@@ -62,33 +101,25 @@ export function DownloadOptions() {
     const canvas = document.createElement('canvas');
     canvas.width = printLayout.pageSize.width;
     canvas.height = printLayout.pageSize.height;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     // Draw white background
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Load and draw the image
+
+    // Load and draw the image (use same logic as digital download)
     const img = new window.Image();
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
       // Draw each photo placement
       printLayout.photos.forEach(placement => {
         ctx.save();
-        
-        // Center the photo at its placement position
         ctx.translate(
           placement.x + placement.width / 2,
           placement.y + placement.height / 2
         );
-        
-        // Apply rotation if any (Note: rotation is visually handled by PrintLayoutService now)
-        // if (placement.rotation !== 0) { 
-        //   ctx.rotate(placement.rotation * Math.PI / 180);
-        // }
-        
-        // Draw the photo centered at the placement position
         ctx.drawImage(
           img,
           -placement.width / 2,
@@ -96,8 +127,6 @@ export function DownloadOptions() {
           placement.width,
           placement.height
         );
-        
-        // Draw thin border around each photo for cutting reference
         ctx.strokeStyle = '#00000022';
         ctx.lineWidth = 1;
         ctx.strokeRect(
@@ -106,15 +135,12 @@ export function DownloadOptions() {
           placement.width,
           placement.height
         );
-        
         ctx.restore();
       });
-      
       // Draw cutting guides
       ctx.strokeStyle = '#00000022';
       ctx.lineWidth = 1;
       ctx.setLineDash([5, 5]);
-      
       printLayout.cuttingGuides.forEach(guide => {
         ctx.beginPath();
         if (guide.type === 'horizontal') {
@@ -126,14 +152,10 @@ export function DownloadOptions() {
         }
         ctx.stroke();
       });
-      
-      // Reset line dash
       ctx.setLineDash([]);
-      
       // Convert to blob and download
       canvas.toBlob((blob) => {
         if (!blob) return;
-        
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -144,10 +166,17 @@ export function DownloadOptions() {
         URL.revokeObjectURL(url);
       }, 'image/jpeg', 0.95);
     };
-    img.onerror = () => { // Added error handling
+    img.onerror = () => {
       console.error("Failed to load image for print download canvas.");
+      // Fallback to direct download if canvas approach fails
+      const link = document.createElement('a');
+      link.href = processedImage;
+      link.download = `vizaphoto-${selectedCountry?.code}-${selectedDocument?.id}-4x6-print.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     };
-    img.src = processedImage;
+    img.src = `${processedImage}?t=${Date.now()}`;
   }
 
   return (
@@ -178,8 +207,8 @@ export function DownloadOptions() {
         />
       ) : (
         <div className="flex justify-center items-center h-64">
-           {/* Optional: Add a loading indicator here */}
-           <p>Calculating print layout...</p> 
+          {/* Optional: Add a loading indicator here */}
+          <p>Calculating print layout...</p>
         </div>
       )}
 
