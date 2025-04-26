@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react"
 // import '@tensorflow/tfjs'; 
 // import '@tensorflow/tfjs-backend-webgl';
 // Import directly from the browser bundle
-import * as faceapi from 'face-api.js/dist/face-api.js'; 
+import * as faceapi from 'face-api.js/dist/face-api.js';
 import type { DocumentType } from "@/data/countries"
 import type {
   GridLinesState,
@@ -108,13 +108,13 @@ export const usePhotoEditor = (
   // Calculate initial grid line positions based on document specifications
   const calculateInitialGridLines = (document: DocumentType) => {
     if (!document) return
-    
+
     const { faceHeight, crownTop = 0, bottomEyeLine = faceHeight * 0.85 } = document.dimensions
-    
+
     const normalizedFaceHeight = faceHeight / document.dimensions.height
     const normalizedCrownTop = crownTop / document.dimensions.height
     const normalizedBottomEyeLine = bottomEyeLine / document.dimensions.height
-    
+
     setGridLines({
       topLine: 0.5 - normalizedFaceHeight / 2 + normalizedCrownTop,
       middleLine: 0.5 - normalizedFaceHeight / 2 + normalizedBottomEyeLine,
@@ -179,7 +179,7 @@ export const usePhotoEditor = (
       imageRef.current = null;
       setImageState((prev) => ({ ...prev, rotation: 0, originalWidth: 0, originalHeight: 0, zoom: 1, scale: 1, initialZoom: 1 }));
       // Reset initial alignment flag
-      setIsInitialAlignmentDone(false); 
+      setIsInitialAlignmentDone(false);
       // Reset trigger counter
       setRecalculationTrigger(0);
       // Don't reset guidelines here, let the other effect handle defaults
@@ -199,15 +199,15 @@ export const usePhotoEditor = (
     img.onload = async () => {
       imageRef.current = img;
       const initialZoom = calculateInitialZoom(img.width, img.height);
-      
+
       // Set initial image state, including initialZoom
-      setImageState((prev: ImageState) => ({ 
+      setImageState((prev: ImageState) => ({
         ...prev,
         originalWidth: img.width,
         originalHeight: img.height,
         zoom: initialZoom,
         scale: initialZoom,
-        rotation: 0, 
+        rotation: 0,
         initialZoom: initialZoom,
       }));
       // Reset guidelines to document defaults initially
@@ -224,7 +224,7 @@ export const usePhotoEditor = (
 
         if (detection) {
           console.log("Face detected for rotation/guidelines:", detection);
-          
+
           // Calculate rotation angle
           const landmarks = detection.landmarks;
           const leftEye = landmarks.getLeftEye();
@@ -238,11 +238,11 @@ export const usePhotoEditor = (
           console.log(`Calculated rotation angle: ${calculatedRotation.toFixed(2)} degrees`);
 
           // --- Apply auto-rotation --- 
-          setImageState((prev: ImageState) => ({ 
+          setImageState((prev: ImageState) => ({
             ...prev,
             rotation: calculatedRotation
           }));
-          
+
         } else {
           console.log("No face detected for rotation/guidelines. Using defaults.");
           // Keep default rotation (0) and default guidelines
@@ -260,9 +260,9 @@ export const usePhotoEditor = (
         // If not, it uses 0 rotation.
         // setIsDetecting(false); // Moved to guideline effect
       }
-      
+
       // --- Guideline calculation is MOVED to a separate effect ---
-      
+
     };
 
     img.onerror = () => {
@@ -273,25 +273,25 @@ export const usePhotoEditor = (
 
     img.src = uploadedImage;
 
-    return () => { 
-      imageRef.current = null; 
+    return () => {
+      imageRef.current = null;
     };
-  // Dependencies: Run when the image, step, or models changes.
-  // REMOVED canvasRef from dependencies here.
-  }, [uploadedImage, step, modelsLoaded, selectedDocument]); 
+    // Dependencies: Run when the image, step, or models changes.
+    // REMOVED canvasRef from dependencies here.
+  }, [uploadedImage, step, modelsLoaded, selectedDocument]);
 
   // --- NEW Effect to Calculate Guidelines AFTER Rotation is Set --- 
   useEffect(() => {
     // Run only AFTER initial alignment attempt is done, AND we have image/canvas/models, and are on step 3
     if (!isInitialAlignmentDone || step !== 3 || !imageRef.current || !canvasRef.current || !modelsLoaded || !faceapi) {
-        // If dependencies aren't ready, ensure detection stops
-        if (isDetecting) setIsDetecting(false);
-        return;
+      // If dependencies aren't ready, ensure detection stops
+      if (isDetecting) setIsDetecting(false);
+      return;
     }
 
     // If already detecting, don't start again (prevent potential loops)
     if (isDetecting) return;
-    
+
     console.log("Calculating guidelines based on current rotation...");
     setIsDetecting(true); // Start detection state here
 
@@ -299,13 +299,13 @@ export const usePhotoEditor = (
       try {
         const canvas = canvasRef.current!;
         const image = imageRef.current!;
-        
+
         // Create a temporary canvas to draw the rotated/scaled image
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = canvas.width; // Use display dimensions
         tempCanvas.height = canvas.height;
         const tempCtx = tempCanvas.getContext('2d')!;
-        
+
         // Draw the image onto the temp canvas using the CURRENT state (rotation, zoom)
         // This state should be stable now because this effect runs AFTER rotation is set
         const scale = imageState.scale; // Use current scale from state
@@ -321,7 +321,7 @@ export const usePhotoEditor = (
         tempCtx.rotate((rotation * Math.PI) / 180); // Apply current rotation
         tempCtx.drawImage(image, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
         tempCtx.restore();
-        
+
         // --- Detect face AGAIN on the TRANSFORMED image for accurate guideline placement --- 
         console.log("Performing detection on transformed image for guidelines...");
         const rotatedDetection = await faceapi
@@ -340,15 +340,15 @@ export const usePhotoEditor = (
           // const rightEyebrow = landmarks.getRightEyeBrow();
 
           const eyeLevelY = (getCenterPoint(leftEye).y + getCenterPoint(rightEye).y) / 2;
-          const chinY = jaw[8].y; 
-          
+          const chinY = jaw[8].y;
+
           // Estimate crown (P) based on nose bridge (M) and chin (Q) distance
           const noseTopY = nose[0].y; // Approx M point Y
           const chinPointY = chinY;   // Approx Q point Y
           const chinToNoseYDist = chinPointY - noseTopY; // Distance MQ
           // Estimate crown Y = M.y - MQ distance
-          const crownY = Math.max(0, noseTopY - chinToNoseYDist); 
-          
+          const crownY = Math.max(0, noseTopY - chinToNoseYDist);
+
           const centerPointX = nose[3].x; // Use nose bridge point for center X
 
           const normTopLine = crownY / tempCanvas.height;
@@ -357,7 +357,7 @@ export const usePhotoEditor = (
           const normCenterLine = centerPointX / tempCanvas.width;
 
           console.log("Setting new gridlines:", { normTopLine, normMiddleLine, normBottomLine, normCenterLine });
-          
+
           setGridLines({
             topLine: normTopLine,
             middleLine: normMiddleLine,
@@ -370,21 +370,21 @@ export const usePhotoEditor = (
           if (selectedDocument) calculateInitialGridLines(selectedDocument);
         }
       } catch (error) {
-          console.error("Error during guideline calculation detection:", error);
-          if (selectedDocument) calculateInitialGridLines(selectedDocument);
+        console.error("Error during guideline calculation detection:", error);
+        if (selectedDocument) calculateInitialGridLines(selectedDocument);
       } finally {
-          setIsDetecting(false); // Detection process finished
-          console.log("Guideline calculation finished.");
+        setIsDetecting(false); // Detection process finished
+        console.log("Guideline calculation finished.");
       }
     };
 
     // Call the async function
     calculateAndSetGuidelines();
 
-  // Dependencies: Run when initial alignment is marked done, or other core elements needed for calculation change.
-  // REMOVED imageState.rotation from dependencies.
-  // Added recalculationTrigger dependency.
-  }, [isInitialAlignmentDone, recalculationTrigger, imageRef.current, canvasRef.current, modelsLoaded, faceapi, step, selectedDocument]); 
+    // Dependencies: Run when initial alignment is marked done, or other core elements needed for calculation change.
+    // REMOVED imageState.rotation from dependencies.
+    // Added recalculationTrigger dependency.
+  }, [isInitialAlignmentDone, recalculationTrigger, imageRef.current, canvasRef.current, modelsLoaded, faceapi, step, selectedDocument]);
 
   // Calculate box dimensions when lines or document changes
   useEffect(() => {
@@ -428,8 +428,7 @@ export const usePhotoEditor = (
     modelsLoaded,
     modelLoadingError,
     isDetecting,
-    setIsDetecting,
-    // Function to trigger recalculation
+    isInitialAlignmentDone,
     triggerGuidelineRecalculation: () => setRecalculationTrigger(prev => prev + 1),
   }
 } 

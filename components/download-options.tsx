@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useAppContext } from "@/context/app-context"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { PrintLayoutService } from "@/services/PrintLayoutService"
 import { PrintPreview } from "./print-preview"
@@ -261,6 +261,22 @@ export function DownloadOptions() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Start Over
         </Button>
+      </div>
+
+      {/* Digital Photo Section */}
+      <div className="relative w-full h-full flex items-center justify-center">
+        {!processedImage ? (
+          <div className="flex flex-col items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin mb-2 text-blue-600" />
+            <p className="text-blue-800 font-medium">Preparing digital photo...</p>
+          </div>
+        ) : (
+          <img
+            src={processedImage}
+            alt="Digital Photo"
+            className="max-w-full max-h-96 rounded shadow"
+          />
+        )}
       </div>
     </div>
   )

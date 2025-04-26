@@ -45,6 +45,7 @@ export function PhotoEditor() {
     modelsLoaded,
     modelLoadingError,
     isDetecting,
+    isInitialAlignmentDone,
     triggerGuidelineRecalculation,
   } = usePhotoEditor(uploadedImage, selectedDocument, step)
 
@@ -227,22 +228,17 @@ export function PhotoEditor() {
               </div>
 
               <div className="relative bg-slate-900 rounded-lg p-4">
-                {(!modelsLoaded || modelLoadingError) && (
-                  <div className="absolute inset-0 bg-slate-900/80 flex flex-col justify-center items-center z-10 rounded-lg">
-                    {modelLoadingError ? (
-                      <>
-                        <p className="text-red-400 text-lg font-semibold mb-2">Error Loading Models</p>
-                        <p className="text-red-300 text-sm text-center px-4 mb-4">{modelLoadingError}</p>
-                        <Button variant="secondary" onClick={() => window.location.reload()}>
-                          Reload Page
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Loader2 className="h-8 w-8 text-slate-400 animate-spin mb-3" />
-                        <p className="text-slate-400">Loading face detection models...</p>
-                      </>
-                    )}
+                {/* Loading overlay for guideline calculation, alignment, or processing */}
+                {(isDetecting || !isInitialAlignmentDone || isProcessing || backgroundState.isRemovingBackground) && (
+                  <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-20 rounded-lg">
+                    <Loader2 className="h-8 w-8 animate-spin mb-2 text-blue-600" />
+                    <p className="text-blue-800 font-medium">
+                      {isDetecting || !isInitialAlignmentDone
+                        ? "Aligning and calculating guidelines..."
+                        : backgroundState.isRemovingBackground
+                          ? "Removing background..."
+                          : "Processing..."}
+                    </p>
                   </div>
                 )}
 
@@ -260,33 +256,36 @@ export function PhotoEditor() {
                     maxWidth: '100%',
                   }}
                 />
-                
+
                 <canvas
                   ref={highResCanvasRef}
                   width={canvasDimensions.highResWidth}
                   height={canvasDimensions.highResHeight}
                   className="hidden"
                 />
-                
-                <div className="absolute bottom-4 left-4 bg-white/90 p-3 rounded-lg shadow-lg text-sm space-y-1">
-                  <p className="font-medium">Drag the colored handles to align:</p>
-                  <p className="flex items-center">
-                    <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
-                    Center line with middle of face
-                  </p>
-                  <p className="flex items-center">
-                    <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
-                    Top red line with crown of head
-                  </p>
-                  <p className="flex items-center">
-                    <span className="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
-                    Blue line with eyes
-                  </p>
-                  <p className="flex items-center">
-                    <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
-                    Bottom red line with chin
-                  </p>
-                </div>
+
+                {/* Only show guideline instructions if not loading */}
+                {!(isDetecting || !isInitialAlignmentDone || isProcessing || backgroundState.isRemovingBackground) && (
+                  <div className="absolute bottom-4 left-4 bg-white/90 p-3 rounded-lg shadow-lg text-sm space-y-1">
+                    <p className="font-medium">Drag the colored handles to align:</p>
+                    <p className="flex items-center">
+                      <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                      Center line with middle of face
+                    </p>
+                    <p className="flex items-center">
+                      <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                      Top red line with crown of head
+                    </p>
+                    <p className="flex items-center">
+                      <span className="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
+                      Blue line with eyes
+                    </p>
+                    <p className="flex items-center">
+                      <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                      Bottom red line with chin
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className={`grid grid-cols-2 gap-6 ${(!modelsLoaded || modelLoadingError) ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -354,7 +353,7 @@ export function PhotoEditor() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between border rounded-md p-3 bg-slate-50">
                     <div className="flex items-center space-x-2">
