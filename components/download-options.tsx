@@ -262,22 +262,6 @@ export function DownloadOptions() {
           Start Over
         </Button>
       </div>
-
-      {/* Digital Photo Section */}
-      <div className="relative w-full h-full flex items-center justify-center">
-        {!processedImage ? (
-          <div className="flex flex-col items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin mb-2 text-blue-600" />
-            <p className="text-blue-800 font-medium">Preparing digital photo...</p>
-          </div>
-        ) : (
-          <img
-            src={processedImage}
-            alt="Digital Photo"
-            className="max-w-full max-h-96 rounded shadow"
-          />
-        )}
-      </div>
     </div>
   )
 }
