@@ -8,7 +8,31 @@ import { ArrowLeft, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { PrintLayoutService } from "@/services/PrintLayoutService"
 import { PrintPreview } from "./print-preview"
-import type { PrintLayout } from "@/types/print"
+
+// Local type definitions
+interface PhotoPlacement {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+}
+
+interface CuttingGuide {
+  type: 'horizontal' | 'vertical';
+  position: number;
+  length: number;
+}
+
+interface PrintLayout {
+  pageSize: {
+    width: number;
+    height: number;
+    dpi: number;
+  };
+  photos: PhotoPlacement[];
+  cuttingGuides: CuttingGuide[];
+}
 
 export function DownloadOptions() {
   const { step, setStep, selectedCountry, selectedDocument, processedImage } = useAppContext()
