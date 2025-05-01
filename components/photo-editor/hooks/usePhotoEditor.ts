@@ -31,7 +31,8 @@ const getCenterPoint = (landmarks: any[]) => {
 export const usePhotoEditor = (
   uploadedImage: string | null,
   selectedDocument: DocumentType | null,
-  step: number
+  step: number,
+  onAutoRotation?: (rotation: number) => void
 ) => {
   // Canvas refs
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -40,8 +41,8 @@ export const usePhotoEditor = (
 
   // Canvas dimensions
   const canvasDimensions: CanvasDimensions = {
-    displayWidth: 500,
-    displayHeight: 500,
+    displayWidth: 600,
+    displayHeight: 600,
     highResWidth: 2000,
     highResHeight: 2000,
   }
@@ -242,6 +243,7 @@ export const usePhotoEditor = (
             ...prev,
             rotation: calculatedRotation
           }));
+          if (onAutoRotation) onAutoRotation(calculatedRotation);
 
         } else {
           console.log("No face detected for rotation/guidelines. Using defaults.");

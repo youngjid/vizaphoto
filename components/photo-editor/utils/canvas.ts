@@ -6,7 +6,8 @@ export const drawImage = (
   img: HTMLImageElement,
   canvasWidth: number,
   canvasHeight: number,
-  { zoom, rotation }: Pick<ImageState, "zoom" | "rotation">
+  { zoom, rotation }: Pick<ImageState, "zoom" | "rotation">,
+  filters?: string
 ) => {
   // Enable high-quality image rendering
   ctx.imageSmoothingEnabled = true
@@ -34,9 +35,13 @@ export const drawImage = (
   // Rotate the canvas
   ctx.rotate((rotation * Math.PI) / 180)
 
+  // Apply filters if provided
+  ctx.filter = filters || "none"
+
   // Draw the image centered
   ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight)
 
+  ctx.filter = "none" // Reset filter
   // Restore the context state (removes rotation)
   ctx.restore()
 }

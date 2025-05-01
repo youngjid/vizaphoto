@@ -4,7 +4,7 @@ import React, { useEffect } from "react"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
+import { Slider, EditableSlider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { ZoomIn, ZoomOut, RotateCcw, RotateCw, RefreshCw, Loader2, ImageDown } from "lucide-react"
@@ -14,6 +14,7 @@ import { useAppContext } from "@/context/app-context"
 import { usePhotoEditor } from "./hooks/usePhotoEditor"
 import { usePhotoProcessor } from "./hooks/usePhotoProcessor"
 import { drawImage, drawOverlay, drawGridLines } from "./utils/canvas"
+import { RemoveBgSwitch } from "./RemoveBgSwitch"
 
 export function PhotoEditor() {
   const {
@@ -26,6 +27,15 @@ export function PhotoEditor() {
     isProcessing,
     setIsProcessing,
   } = useAppContext()
+
+  const [rotate, setRotate] = React.useState(0)
+  const [initialAutoRotation, setInitialAutoRotation] = React.useState(0)
+
+  // When auto-rotation is calculated (in usePhotoEditor callback)
+  const handleAutoRotation = (autoRotation: number) => {
+    setRotate(autoRotation);
+    setInitialAutoRotation(autoRotation);
+  };
 
   const {
     canvasRef,
@@ -47,7 +57,7 @@ export function PhotoEditor() {
     isDetecting,
     isInitialAlignmentDone,
     triggerGuidelineRecalculation,
-  } = usePhotoEditor(uploadedImage, selectedDocument, step)
+  } = usePhotoEditor(uploadedImage, selectedDocument, step, handleAutoRotation)
 
   const { processPhoto } = usePhotoProcessor({
     canvasRef: canvasRef as React.RefObject<HTMLCanvasElement>,
@@ -63,6 +73,12 @@ export function PhotoEditor() {
     setStep,
     setIsProcessing,
   })
+
+  // Add state for each slider
+  const [brightness, setBrightness] = React.useState(50)
+  const [contrast, setContrast] = React.useState(50)
+  const [exposure, setExposure] = React.useState(50)
+  const [saturate, setSaturate] = React.useState(50)
 
   // Draw canvas when any parameters change
   useEffect(() => {
@@ -81,15 +97,27 @@ export function PhotoEditor() {
     ctx.fillStyle = "white"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
+    // Build filter string
+    // Brightness: 0-100 (default 50), CSS: 1 is normal
+    // Contrast: 0-100 (default 50), CSS: 1 is normal
+    // Exposure: 0-100 (default 50), map to brightness (1 is normal, 2 is max, 0 is min)
+    // Saturate: 0-100 (default 50), CSS: 1 is normal
+    const brightnessVal = 1 + (brightness - 50) / 50; // 0 to 2
+    const contrastVal = 1 + (contrast - 50) / 50; // 0 to 2
+    const exposureVal = 1 + (exposure - 50) / 50; // 0 to 2
+    const saturateVal = 1 + (saturate - 50) / 50; // 0 to 2
+    // Combine exposure and brightness for a more photographic effect
+    const filterString = `brightness(${brightnessVal * exposureVal}) contrast(${contrastVal}) saturate(${saturateVal})`;
+
     // Draw the image if available
     if (imageRef.current) {
-      drawImage(ctx, imageRef.current, canvas.width, canvas.height, imageState)
+      drawImage(ctx, imageRef.current, canvas.width, canvas.height, imageState, filterString)
     }
 
     // Always draw overlay and grid lines
     drawOverlay(ctx, canvas.width, canvas.height, boxDimensions)
     drawGridLines(ctx, canvas.width, canvas.height, gridLines, boxDimensions)
-  }, [imageState, gridLines, boxDimensions, modelsLoaded, modelLoadingError])
+  }, [imageState, gridLines, boxDimensions, modelsLoaded, modelLoadingError, brightness, contrast, exposure, saturate])
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!modelsLoaded || modelLoadingError) return;
@@ -180,213 +208,137 @@ export function PhotoEditor() {
     return `${width} × ${height} ${units}${dpi}`
   }
 
+  // On Re-align click, reset rotation to initial auto value
+  const handleReAlign = () => {
+    setRotate(initialAutoRotation);
+    setImageState(prev => ({ ...prev, rotation: initialAutoRotation }));
+    triggerGuidelineRecalculation();
+  };
+
   if (step !== 3) return null
 
   return (
-    <div className="max-w-4xl mx-auto mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <TooltipProvider delayDuration={200}>
-        <Card className="border-slate-200 shadow-sm">
-          <CardContent className="p-6">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-900">Photo Editor</h2>
-                  <p className="text-sm text-slate-500 flex items-center gap-2">
-                    <span>{selectedDocument?.name} {selectedDocument && formatDimensions(selectedDocument.dimensions)}</span>
-                    <span>for</span>
-                    <span>{selectedCountry?.name}</span>
-                    {selectedCountry?.flag && (
-                      <Image
-                        src={selectedCountry.flag}
-                        alt={`${selectedCountry.name} flag`}
-                        width={24}
-                        height={16}
-                        className="inline-block"
-                      />
-                    )}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setStep(2)}>
-                    Back to Upload
-                  </Button>
-                  <Button
-                    onClick={processPhoto}
-                    disabled={isProcessing || backgroundState.isRemovingBackground}
-                    className="px-8"
-                  >
-                    {isProcessing || backgroundState.isRemovingBackground ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {backgroundState.isRemovingBackground ? "Removing Background..." : "Processing..."}
-                      </>
-                    ) : (
-                      "Process Photo"
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="relative bg-slate-900 rounded-lg p-4">
-                {/* Loading overlay for guideline calculation, alignment, or processing */}
-                {(isDetecting || !isInitialAlignmentDone || isProcessing || backgroundState.isRemovingBackground) && (
-                  <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-20 rounded-lg">
-                    <Loader2 className="h-8 w-8 animate-spin mb-2 text-blue-600" />
-                    <p className="text-blue-800 font-medium">
-                      {isDetecting || !isInitialAlignmentDone
-                        ? "Aligning and calculating guidelines..."
-                        : backgroundState.isRemovingBackground
-                          ? "Removing background..."
-                          : "Processing..."}
-                    </p>
-                  </div>
+    <div className="max-w-6xl mx-auto mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex flex-col mb-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-bold mb-1">Photo Editor</h2>
+            {selectedDocument && (
+              <p className="text-gray-500">
+                {selectedDocument.name} ({formatDimensions(selectedDocument.dimensions)}) for {selectedCountry?.name}{" "}
+                {selectedCountry?.flag && (
+                  <Image
+                    src={selectedCountry.flag}
+                    alt={`${selectedCountry.name} flag`}
+                    width={24}
+                    height={16}
+                    className="inline-block"
+                  />
                 )}
+              </p>
+            )}
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep(1)}>Back to Upload</Button>
+            <Button variant="default" className="bg-black hover:bg-black/90" onClick={processPhoto}>Process Photo</Button>
+          </div>
+        </div>
+      </div>
 
-                <canvas
-                  ref={canvasRef}
-                  width={canvasDimensions.displayWidth}
-                  height={canvasDimensions.displayHeight}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
-                  className={`w-full h-auto ${dragState.isDragging ? "cursor-move" : "cursor-default"} ${(!modelsLoaded || modelLoadingError) ? 'opacity-50' : ''}`}
-                  style={{
-                    imageRendering: '-webkit-optimize-contrast',
-                    maxWidth: '100%',
-                  }}
-                />
+      <div className="grid grid-cols-[600px_1fr] gap-6">
+        {/* Left side - Canvas */}
+        <div className="relative bg-gray-200 rounded-lg p-4">
+          {(isDetecting || !isInitialAlignmentDone || isProcessing || backgroundState.isRemovingBackground) && (
+            <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-20 rounded-lg">
+              <Loader2 className="h-8 w-8 animate-spin mb-2 text-blue-600" />
+              <p className="text-blue-800 font-medium">
+                {isDetecting || !isInitialAlignmentDone
+                  ? "Aligning and calculating guidelines..."
+                  : backgroundState.isRemovingBackground
+                    ? "Removing background..."
+                    : "Processing..."}
+              </p>
+            </div>
+          )}
 
-                <canvas
-                  ref={highResCanvasRef}
-                  width={canvasDimensions.highResWidth}
-                  height={canvasDimensions.highResHeight}
-                  className="hidden"
-                />
+          <canvas
+            ref={canvasRef}
+            width={canvasDimensions.displayWidth}
+            height={canvasDimensions.displayHeight}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            className={`w-full h-auto border-2 border-white shadow-lg ${dragState.isDragging ? "cursor-move" : "cursor-default"} ${(!modelsLoaded || modelLoadingError) ? 'opacity-50' : ''}`}
+            style={{
+              imageRendering: '-webkit-optimize-contrast',
+              maxWidth: '100%',
+            }}
+          />
 
-                {/* Only show guideline instructions if not loading */}
-                {!(isDetecting || !isInitialAlignmentDone || isProcessing || backgroundState.isRemovingBackground) && (
-                  <div className="absolute bottom-4 left-4 bg-white/90 p-3 rounded-lg shadow-lg text-sm space-y-1">
-                    <p className="font-medium">Drag the colored handles to align:</p>
-                    <p className="flex items-center">
-                      <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
-                      Center line with middle of face
-                    </p>
-                    <p className="flex items-center">
-                      <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
-                      Top red line with crown of head
-                    </p>
-                    <p className="flex items-center">
-                      <span className="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
-                      Blue line with eyes
-                    </p>
-                    <p className="flex items-center">
-                      <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
-                      Bottom red line with chin
-                    </p>
-                  </div>
-                )}
-              </div>
+          <canvas
+            ref={highResCanvasRef}
+            width={canvasDimensions.highResWidth}
+            height={canvasDimensions.highResHeight}
+            className="hidden"
+          />
+        </div>
 
-              <div className={`grid grid-cols-2 gap-6 ${(!modelsLoaded || modelLoadingError) ? 'opacity-50 pointer-events-none' : ''}`}>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleRotate(-1)}
-                            className="h-8 w-8"
-                          >
-                            <RotateCcw className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Rotate Left 1°</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleRotate(1)}
-                            className="h-8 w-8"
-                          >
-                            <RotateCw className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Rotate Right 1°</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={triggerGuidelineRecalculation}
-                            disabled={isDetecting}
-                            className="h-8 w-8"
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Re-align Guidelines</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <ZoomOut className="h-4 w-4 text-slate-500" />
-                      <Slider
-                        value={[imageState.zoom * 100]}
-                        min={Math.max(10, imageState.initialZoom * 100)}
-                        max={300}
-                        step={1}
-                        onValueChange={(value) => handleZoom(value[0] / 100)}
-                        className="w-32"
-                      />
-                      <ZoomIn className="h-4 w-4 text-slate-500" />
-                    </div>
-                  </div>
-                </div>
+        {/* Right side - Controls */}
+        <div className="space-y-6">
+          {/* Image adjustments */}
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <EditableSlider label="Brightness" min={0} max={100} value={brightness} onChange={setBrightness} />
+              <EditableSlider label="Contrast" min={0} max={100} value={contrast} onChange={setContrast} />
+              <EditableSlider label="Exposure" min={0} max={100} value={exposure} onChange={setExposure} />
+              <EditableSlider label="Saturate" min={0} max={100} value={saturate} onChange={setSaturate} />
+              <EditableSlider label="Rotate" min={-45} max={45} value={rotate} onChange={val => { setRotate(val); setImageState(prev => ({ ...prev, rotation: val })); }} valueSuffix="°" />
+            </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between border rounded-md p-3 bg-slate-50">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="remove-background"
-                        checked={backgroundState.removeBackground}
-                        onCheckedChange={(value) => setBackgroundState(prev => ({ ...prev, removeBackground: value }))}
-                        disabled={isProcessing || backgroundState.isRemovingBackground}
-                      />
-                      <Label htmlFor="remove-background" className="flex items-center gap-2">
-                        <ImageDown className="h-4 w-4" />
-                        Remove background (white)
-                      </Label>
-                    </div>
-                    {backgroundState.removeBackground && (
-                      <div className="text-xs text-slate-500">
-                        {backgroundState.isRemovingBackground ? (
-                          <span className="flex items-center">
-                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                            Processing...
-                          </span>
-                        ) : (
-                          "Will remove background after cropping"
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
+            <div className="flex items-center mt-4">
+              <Button
+                variant="secondary"
+                className="bg-gray-900 text-white hover:bg-gray-800 w-40"
+                onClick={handleReAlign}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Re-align
+              </Button>
+              <div className="flex-1" />
+              <RemoveBgSwitch
+                checked={backgroundState.removeBackground}
+                onChange={val => setBackgroundState(prev => ({ ...prev, removeBackground: val }))}
+              />
+            </div>
+          </div>
+
+          {/* Alignment instructions */}
+          <div className="bg-gray-100 rounded-lg p-4">
+            <div className="space-y-3">
+              <h3 className="font-medium">Drag the colored handles to align:</h3>
+              <div className="space-y-2">
+                <p className="flex items-center">
+                  <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                  Center line with middle of face
+                </p>
+                <p className="flex items-center">
+                  <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                  Top red line with crown of head
+                </p>
+                <p className="flex items-center">
+                  <span className="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
+                  Blue line with eyes
+                </p>
+                <p className="flex items-center">
+                  <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                  Bottom red line with chin
+                </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </TooltipProvider>
+          </div>
+        </div>
+      </div>
     </div>
   )
 } 
