@@ -26,17 +26,18 @@ export function PhotoUploader() {
     if (step !== 2) return
 
     const loadModels = async () => {
-      const MODEL_URL = '/models'
+      const MODEL_URL = window.location.origin + '/models'
       setModelLoadingError(null)
       setModelsLoaded(false)
       try {
         console.log('Loading face detection models in uploader...')
+        console.log('Model URL:', MODEL_URL)
         await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL)
         setModelsLoaded(true)
         console.log('Face detection model loaded successfully in uploader.')
       } catch (error) {
         console.error('Error loading face detection model:', error)
-        setModelLoadingError('Failed to load face detection model. Please try reloading.')
+        setModelLoadingError('Failed to load face detection model. Please ensure WebGL is enabled in your browser and try reloading.')
         setModelsLoaded(false)
       }
     }

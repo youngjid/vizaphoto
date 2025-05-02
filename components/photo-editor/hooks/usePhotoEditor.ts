@@ -153,18 +153,19 @@ export const usePhotoEditor = (
   // Load models (only landmark model needed now)
   useEffect(() => {
     const loadModels = async () => {
-      const MODEL_URL = '/models';
+      const MODEL_URL = window.location.origin + '/models';
       setModelLoadingError(null);
       setModelsLoaded(false);
       try {
         console.log('Loading face landmark model...');
+        console.log('Model URL:', MODEL_URL);
         // Only load the landmark model needed for guidelines
         await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
         setModelsLoaded(true);
         console.log('Face landmark model loaded successfully.');
       } catch (error) {
         console.error('Error loading face landmark model:', error);
-        setModelLoadingError('Failed to load face landmark model. Please try reloading.');
+        setModelLoadingError('Failed to load face landmark model. Please ensure WebGL is enabled in your browser and try reloading.');
         setModelsLoaded(false);
       }
     };
