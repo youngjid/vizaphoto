@@ -32,12 +32,16 @@ export function PhotoUploader() {
       try {
         console.log('Loading face detection models in uploader...')
         console.log('Model URL:', MODEL_URL)
-        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL)
+        // Load both detection models for better coverage
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL)
+        ])
         setModelsLoaded(true)
-        console.log('Face detection model loaded successfully in uploader.')
+        console.log('Face detection models loaded successfully in uploader.')
       } catch (error) {
-        console.error('Error loading face detection model:', error)
-        setModelLoadingError('Failed to load face detection model. Please ensure WebGL is enabled in your browser and try reloading.')
+        console.error('Error loading face detection models:', error)
+        setModelLoadingError('Failed to load face detection models. Please ensure WebGL is enabled in your browser and try reloading.')
         setModelsLoaded(false)
       }
     }
@@ -87,19 +91,35 @@ export function PhotoUploader() {
       img.onload = async () => {
         try {
           console.log("Performing face detection...")
-          const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+          const detection = await faceapi.detectSingleFace(
+            img, 
+            new faceapi.TinyFaceDetectorOptions({
+              inputSize: 416,      // Increased from default 320
+              scoreThreshold: 0.3  // Lowered from default 0.5 for better detection
+            })
+          )
 
           if (detection) {
-            console.log("Face detected!")
+            console.log("Face detected!", detection)
             setUploadedImage(dataUrl)
             setStep(3)
             setPreviewUrl(null)
           } else {
-            console.log("No face detected.")
-            setDetectionError("No face detected. Please upload a photo clearly showing a person's face.")
-            setPreviewUrl(null)
-            if (fileInputRef.current) {
-              fileInputRef.current.value = ""
+            console.log("Trying fallback detection method...")
+            const fallbackDetection = await faceapi.detectSingleFace(img)
+            
+            if (fallbackDetection) {
+              console.log("Face detected with fallback method!", fallbackDetection)
+              setUploadedImage(dataUrl)
+              setStep(3)
+              setPreviewUrl(null)
+            } else {
+              console.log("No face detected.")
+              setDetectionError("No face detected. Please ensure your face is clearly visible and well-lit.")
+              setPreviewUrl(null)
+              if (fileInputRef.current) {
+                fileInputRef.current.value = ""
+              }
             }
           }
         } catch (error) {
