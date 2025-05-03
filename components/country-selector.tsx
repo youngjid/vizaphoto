@@ -33,9 +33,9 @@ export function CountrySelector() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="grid md:grid-cols-[1fr,auto] gap-8">
-        <Card className="border-slate-200 shadow-sm">
+    <div className="max-w-6xl mx-auto mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500 px-2 sm:px-4">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-4 md:gap-8">
+        <Card className="border-slate-200 shadow-sm w-full">
           <CardHeader className="pb-4">
             <CardTitle className="text-2xl font-bold text-slate-900">Free Passport Photo Maker</CardTitle>
             <CardDescription>Select country/region and photo type, then click Start</CardDescription>
@@ -222,8 +222,8 @@ export function CountrySelector() {
               </div>
             )}
 
-            <div className="flex justify-between items-center pt-4">
-              <div className="text-sm text-slate-500">
+            <div className="flex flex-col sm:flex-row justify-between items-center pt-4 gap-2 sm:gap-0">
+              <div className="text-sm text-slate-500 text-center sm:text-left">
                 {selectedCountry && selectedDocument
                   ? `${selectedDocument.name} (${formatDimensions(selectedDocument.dimensions)}) for ${selectedCountry.name}`
                   : "Please select country and document type"}
@@ -232,7 +232,7 @@ export function CountrySelector() {
                 size="lg"
                 disabled={!selectedCountry || !selectedDocument}
                 onClick={() => setStep(2)}
-                className="px-8"
+                className="px-8 w-full sm:w-auto mt-2 sm:mt-0"
               >
                 Make Free Passport Photo
               </Button>
@@ -241,10 +241,10 @@ export function CountrySelector() {
         </Card>
 
         {/* How it works section */}
-        <div className="w-[400px] bg-white rounded-lg border border-slate-200 shadow-sm p-6">
-          <h2 className="text-xl font-bold mb-6">How it works</h2>
+        <div className="w-full mt-8 md:mt-0 bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+          <h2 className="text-xl font-bold mb-4 sm:mb-6">How it works</h2>
           <div className="relative">
-            <div className="absolute -top-6 right-0 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium transform rotate-6">
+            <div className="absolute -top-6 right-0 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs sm:text-sm font-medium transform rotate-6">
               Your Image
             </div>
             <div className="relative mb-8">
@@ -256,7 +256,7 @@ export function CountrySelector() {
                 className="rounded-lg shadow-lg mx-auto"
               />
               {selectedCountry && selectedDocument && (
-                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-24 h-32 bg-white p-1 rounded-md shadow-lg">
+                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-20 h-28 sm:w-24 sm:h-32 bg-white p-1 rounded-md shadow-lg">
                   <Image
                     src={selectedDocument.thumbnail}
                     alt={`${selectedCountry.name} ${selectedDocument.name}`}
