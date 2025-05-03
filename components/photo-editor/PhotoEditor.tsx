@@ -245,9 +245,9 @@ export function PhotoEditor() {
         </div>
       </div>
 
-      <div className="grid grid-cols-[600px_1fr] gap-6">
+      <div className="grid grid-cols-[600px_1fr] gap-6 items-stretch">
         {/* Left side - Canvas */}
-        <div className="relative bg-gray-200 rounded-lg p-4">
+        <div className="relative bg-gray-200 rounded-lg p-4 h-full flex flex-col justify-center">
           {(isDetecting || !isInitialAlignmentDone || isProcessing || backgroundState.isRemovingBackground) && (
             <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-20 rounded-lg">
               <Loader2 className="h-8 w-8 animate-spin mb-2 text-blue-600" />
@@ -285,7 +285,7 @@ export function PhotoEditor() {
         </div>
 
         {/* Right side - Controls */}
-        <div className="space-y-6">
+        <div className="h-full flex flex-col bg-gray-200 rounded-lg p-4 justify-between">
           {/* Image adjustments */}
           <div className="space-y-6">
             <div className="space-y-4">
@@ -314,7 +314,7 @@ export function PhotoEditor() {
           </div>
 
           {/* Alignment instructions */}
-          <div className="bg-gray-100 rounded-lg p-4">
+          <div className="bg-white rounded-lg p-4 mt-6">
             <div className="space-y-3">
               <h3 className="font-medium">Drag the colored handles to align:</h3>
               <div className="space-y-2">
