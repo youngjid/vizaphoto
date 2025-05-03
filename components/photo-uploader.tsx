@@ -157,21 +157,33 @@ export function PhotoUploader() {
 
   return (
     <div className="max-w-4xl mx-auto mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="text-center mb-4">
-        <h2 className="text-xl font-bold flex items-center justify-center gap-2">
-          <span>{selectedDocument?.name} {selectedDocument && `(${formatDimensions(selectedDocument.dimensions)})`}</span>
-          <span>|</span>
-          <span>{selectedCountry?.name}</span>
-          {selectedCountry?.flag && (
-            <Image
-              src={selectedCountry.flag}
-              alt={`${selectedCountry.name} flag`}
-              width={24}
-              height={16}
-              className="inline-block"
-            />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+        <div>
+          <h2 className="text-2xl font-bold mb-1">Upload Photo</h2>
+          {selectedDocument && selectedCountry && (
+            <div className="inline-block bg-gray-100 text-orange-600 text-sm rounded px-3 py-1 font-semibold">
+              {selectedDocument.name} {selectedDocument.dimensions && `(${formatDimensions(selectedDocument.dimensions)})`} <span className="text-slate-700 font-normal">| {selectedCountry.name}</span>
+              {selectedCountry.flag && (
+                <Image
+                  src={selectedCountry.flag}
+                  alt={`${selectedCountry.name} flag`}
+                  width={20}
+                  height={14}
+                  className="inline-block ml-2 align-middle"
+                />
+              )}
+            </div>
           )}
-        </h2>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setStep(1)}>
+            Back
+          </Button>
+          <Button onClick={handleButtonClick} disabled={isDetecting || !modelsLoaded}>
+            <Camera className="mr-2 h-4 w-4" />
+            Take or Upload Photo
+          </Button>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -369,16 +381,6 @@ export function PhotoUploader() {
             </div>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="flex justify-between mt-6">
-        <Button variant="outline" onClick={() => setStep(1)}>
-          Back
-        </Button>
-        <Button onClick={handleButtonClick} disabled={isDetecting || !modelsLoaded}>
-          <Camera className="mr-2 h-4 w-4" />
-          Take or Upload Photo
-        </Button>
       </div>
     </div>
   )
