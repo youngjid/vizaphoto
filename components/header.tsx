@@ -3,15 +3,13 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { useRef } from "react"
+import { useRouter } from "next/navigation"
 
 export function Header() {
+  const router = useRouter();
   // Function to focus the country selector input
   const handleSelectDocument = () => {
-    // Set step to 1 (Choose country/document)
-    if (typeof window !== 'undefined') {
-      const event = new CustomEvent('focus-country-selector')
-      window.dispatchEvent(event)
-    }
+    router.push('/?focus=document');
   }
   return (
     <header className="bg-white border-b">

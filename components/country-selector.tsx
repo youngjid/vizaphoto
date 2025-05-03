@@ -10,12 +10,15 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import Image from "next/image"
+import { useSearchParams, useRouter } from "next/navigation"
 
 export function CountrySelector() {
   const { step, setStep, selectedCountry, setSelectedCountry, selectedDocument, setSelectedDocument } = useAppContext()
   const [openCountry, setOpenCountry] = useState(false)
   const [openDocument, setOpenDocument] = useState(false)
   const countryInputRef = useRef<HTMLInputElement>(null)
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Reset selected document when country changes
   useEffect(() => {
@@ -27,18 +30,18 @@ export function CountrySelector() {
     }
   }, [selectedCountry, selectedDocument, setSelectedDocument])
 
-  // Listen for custom event to focus country selector
+  // Focus logic based on query param
   useEffect(() => {
-    const handler = () => {
-      setStep(1)
-      setOpenCountry(true)
+    if (searchParams.get('focus') === 'document') {
+      setStep(1);
+      setOpenCountry(true);
       setTimeout(() => {
-        countryInputRef.current?.focus()
-      }, 100)
+        countryInputRef.current?.focus();
+        // Clean up the URL (remove ?focus=document)
+        router.replace('/', { scroll: false });
+      }, 100);
     }
-    window.addEventListener('focus-country-selector', handler)
-    return () => window.removeEventListener('focus-country-selector', handler)
-  }, [setStep])
+  }, [searchParams, setStep, router]);
 
   if (step !== 1) return null
 
