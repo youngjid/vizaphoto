@@ -223,19 +223,19 @@ export function PhotoEditor() {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
           <div>
             <h2 className="text-2xl font-bold mb-1">Photo Editor</h2>
-            {selectedDocument && (
-              <p className="text-gray-500 text-sm sm:text-base">
-                {selectedDocument.name} ({formatDimensions(selectedDocument.dimensions)}) for {selectedCountry?.name}{" "}
-                {selectedCountry?.flag && (
+            {selectedDocument && selectedCountry && (
+              <div className="inline-block bg-gray-100 text-orange-600 text-sm rounded px-3 py-1 font-semibold">
+                {selectedDocument.name} {selectedDocument.dimensions && `(${formatDimensions(selectedDocument.dimensions)})`} <span className="text-slate-700 font-normal">| {selectedCountry.name}</span>
+                {selectedCountry.flag && (
                   <Image
                     src={selectedCountry.flag}
                     alt={`${selectedCountry.name} flag`}
-                    width={24}
-                    height={16}
-                    className="inline-block"
+                    width={20}
+                    height={14}
+                    className="inline-block ml-2 align-middle"
                   />
                 )}
-              </p>
+              </div>
             )}
           </div>
           <div className="flex gap-2 sm:gap-3">
