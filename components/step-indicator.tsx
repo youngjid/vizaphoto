@@ -25,9 +25,9 @@ export function StepIndicator() {
   return (
     <div className="w-full max-w-3xl mx-auto">
       <nav aria-label="Progress">
-        <ol className="flex items-center">
+        <ol className="flex items-center gap-4 md:gap-8">
           {steps.map((s, i) => (
-            <li key={s.id} className={`relative ${i === steps.length - 1 ? "flex-1" : "flex-1 pr-8"}`}>
+            <li key={s.id} className="flex items-center flex-1 min-w-0">
               <div className="flex items-center">
                 <Button
                   variant="outline"
@@ -59,7 +59,7 @@ export function StepIndicator() {
                 </span>
               </div>
               {i !== steps.length - 1 && (
-                <div className="absolute top-4 right-0 hidden md:block">
+                <div className="flex items-center mx-2">
                   <ChevronRight className="h-4 w-4 text-slate-400" />
                 </div>
               )}
