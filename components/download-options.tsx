@@ -212,20 +212,24 @@ export function DownloadOptions() {
 
   return (
     <div className="max-w-6xl mx-auto mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 gap-4 flex-wrap">
         <h2 className="text-2xl font-bold">Download Options</h2>
-        <div className="text-sm text-slate-500 flex items-center gap-2">
-          {selectedDocument?.name} ({getPhotoSize()}) for {selectedCountry?.name}{" "}
-          {selectedCountry?.flag && (
-            <Image
-              src={selectedCountry.flag}
-              alt={`${selectedCountry.name} flag`}
-              width={24}
-              height={16}
-              className="inline-block"
-            />
-          )}
-        </div>
+        <Button variant="default" onClick={() => setStep(1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Start Over
+        </Button>
+      </div>
+      <div className="text-sm text-slate-500 flex items-center gap-2 mb-6 mt-2">
+        {selectedDocument?.name} ({getPhotoSize()}) for {selectedCountry?.name}{" "}
+        {selectedCountry?.flag && (
+          <Image
+            src={selectedCountry.flag}
+            alt={`${selectedCountry.name} flag`}
+            width={24}
+            height={16}
+            className="inline-block"
+          />
+        )}
       </div>
 
       {/* Conditional rendering based on printLayout being calculated */}
@@ -278,13 +282,6 @@ export function DownloadOptions() {
             </div>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="flex justify-between mt-6">
-        <Button variant="outline" onClick={() => setStep(1)}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Start Over
-        </Button>
       </div>
     </div>
   )
