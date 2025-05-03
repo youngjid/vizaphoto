@@ -50,28 +50,33 @@ export function Footer() {
             <h4 className="font-medium mb-4">Popular Countries</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/" className="text-slate-600 hover:text-blue-600">
-                  🇺🇸 United States
+                <Link href="/" className="text-slate-600 hover:text-blue-600 flex items-center gap-2">
+                  <Image src="/assets/flags/us.svg" alt="US flag" width={20} height={14} className="inline-block" />
+                  United States
                 </Link>
               </li>
               <li>
-                <Link href="/" className="text-slate-600 hover:text-blue-600">
-                  🇬🇧 United Kingdom
+                <Link href="/" className="text-slate-600 hover:text-blue-600 flex items-center gap-2">
+                  <Image src="/assets/flags/gb.svg" alt="UK flag" width={20} height={14} className="inline-block" />
+                  United Kingdom
                 </Link>
               </li>
               <li>
-                <Link href="/" className="text-slate-600 hover:text-blue-600">
-                  🇨🇦 Canada
+                <Link href="/" className="text-slate-600 hover:text-blue-600 flex items-center gap-2">
+                  <Image src="/assets/flags/ca.svg" alt="Canada flag" width={20} height={14} className="inline-block" />
+                  Canada
                 </Link>
               </li>
               <li>
-                <Link href="/" className="text-slate-600 hover:text-blue-600">
-                  🇦🇺 Australia
+                <Link href="/" className="text-slate-600 hover:text-blue-600 flex items-center gap-2">
+                  <Image src="/assets/flags/au.svg" alt="Australia flag" width={20} height={14} className="inline-block" />
+                  Australia
                 </Link>
               </li>
               <li>
-                <Link href="/" className="text-slate-600 hover:text-blue-600">
-                  🇩🇪 Germany
+                <Link href="/" className="text-slate-600 hover:text-blue-600 flex items-center gap-2">
+                  <Image src="/assets/flags/de.svg" alt="Germany flag" width={20} height={14} className="inline-block" />
+                  Germany
                 </Link>
               </li>
             </ul>
