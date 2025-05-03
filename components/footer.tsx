@@ -1,7 +1,12 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
+import { useAppContext } from "@/context/app-context"
+import { countries } from "@/data/countries"
 
 export function Footer() {
+  const { setSelectedCountry } = useAppContext();
   return (
     <footer className="bg-white border-t mt-12">
       <div className="container mx-auto px-4 py-8">
@@ -50,34 +55,54 @@ export function Footer() {
             <h4 className="font-medium mb-4">Popular Countries</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/" className="text-slate-600 hover:text-blue-600 flex items-center gap-2">
+                <button
+                  type="button"
+                  className="text-slate-600 hover:text-blue-600 flex items-center gap-2 w-full text-left bg-transparent border-0 p-0"
+                  onClick={() => setSelectedCountry(countries.find(c => c.code === "US") || null)}
+                >
                   <Image src="/assets/flags/us.svg" alt="US flag" width={20} height={14} className="inline-block" />
                   United States
-                </Link>
+                </button>
               </li>
               <li>
-                <Link href="/" className="text-slate-600 hover:text-blue-600 flex items-center gap-2">
+                <button
+                  type="button"
+                  className="text-slate-600 hover:text-blue-600 flex items-center gap-2 w-full text-left bg-transparent border-0 p-0"
+                  onClick={() => setSelectedCountry(countries.find(c => c.code === "GB") || null)}
+                >
                   <Image src="/assets/flags/gb.svg" alt="UK flag" width={20} height={14} className="inline-block" />
                   United Kingdom
-                </Link>
+                </button>
               </li>
               <li>
-                <Link href="/" className="text-slate-600 hover:text-blue-600 flex items-center gap-2">
+                <button
+                  type="button"
+                  className="text-slate-600 hover:text-blue-600 flex items-center gap-2 w-full text-left bg-transparent border-0 p-0"
+                  onClick={() => setSelectedCountry(countries.find(c => c.code === "CA") || null)}
+                >
                   <Image src="/assets/flags/ca.svg" alt="Canada flag" width={20} height={14} className="inline-block" />
                   Canada
-                </Link>
+                </button>
               </li>
               <li>
-                <Link href="/" className="text-slate-600 hover:text-blue-600 flex items-center gap-2">
+                <button
+                  type="button"
+                  className="text-slate-600 hover:text-blue-600 flex items-center gap-2 w-full text-left bg-transparent border-0 p-0"
+                  onClick={() => setSelectedCountry(countries.find(c => c.code === "AU") || null)}
+                >
                   <Image src="/assets/flags/au.svg" alt="Australia flag" width={20} height={14} className="inline-block" />
                   Australia
-                </Link>
+                </button>
               </li>
               <li>
-                <Link href="/" className="text-slate-600 hover:text-blue-600 flex items-center gap-2">
+                <button
+                  type="button"
+                  className="text-slate-600 hover:text-blue-600 flex items-center gap-2 w-full text-left bg-transparent border-0 p-0"
+                  onClick={() => setSelectedCountry(countries.find(c => c.code === "DE") || null)}
+                >
                   <Image src="/assets/flags/de.svg" alt="Germany flag" width={20} height={14} className="inline-block" />
                   Germany
-                </Link>
+                </button>
               </li>
             </ul>
           </div>
