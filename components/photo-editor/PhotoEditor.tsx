@@ -218,13 +218,13 @@ export function PhotoEditor() {
   if (step !== 3) return null
 
   return (
-    <div className="max-w-6xl mx-auto mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col mb-6">
-        <div className="flex justify-between items-start">
+    <div className="max-w-6xl mx-auto mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500 px-2 sm:px-4">
+      <div className="flex flex-col mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
           <div>
             <h2 className="text-2xl font-bold mb-1">Photo Editor</h2>
             {selectedDocument && (
-              <p className="text-gray-500">
+              <p className="text-gray-500 text-sm sm:text-base">
                 {selectedDocument.name} ({formatDimensions(selectedDocument.dimensions)}) for {selectedCountry?.name}{" "}
                 {selectedCountry?.flag && (
                   <Image
@@ -238,20 +238,20 @@ export function PhotoEditor() {
               </p>
             )}
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setStep(1)}>Back to Upload</Button>
-            <Button variant="default" className="bg-black hover:bg-black/90" onClick={processPhoto}>Process Photo</Button>
+          <div className="flex gap-2 sm:gap-3">
+            <Button variant="outline" onClick={() => setStep(1)} size="sm">Back to Upload</Button>
+            <Button variant="default" className="bg-black hover:bg-black/90" onClick={processPhoto} size="sm">Process Photo</Button>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-[600px_1fr] gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-[600px_1fr] gap-4 lg:gap-6 items-stretch">
         {/* Left side - Canvas */}
-        <div className="relative bg-gray-200 rounded-lg p-4 h-full flex flex-col justify-center">
+        <div className="relative bg-gray-200 rounded-lg p-2 sm:p-4 h-full flex flex-col justify-center w-full max-w-full">
           {(isDetecting || !isInitialAlignmentDone || isProcessing || backgroundState.isRemovingBackground) && (
             <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-20 rounded-lg">
               <Loader2 className="h-8 w-8 animate-spin mb-2 text-blue-600" />
-              <p className="text-blue-800 font-medium">
+              <p className="text-blue-800 font-medium text-sm sm:text-base">
                 {isDetecting || !isInitialAlignmentDone
                   ? "Aligning and calculating guidelines..."
                   : backgroundState.isRemovingBackground
@@ -285,10 +285,10 @@ export function PhotoEditor() {
         </div>
 
         {/* Right side - Controls */}
-        <div className="h-full flex flex-col bg-gray-200 rounded-lg p-4 justify-between">
+        <div className="h-full flex flex-col bg-gray-200 rounded-lg p-2 sm:p-4 justify-between w-full max-w-full">
           {/* Image adjustments */}
-          <div className="space-y-6">
-            <div className="space-y-4">
+          <div className="space-y-4 sm:space-y-6">
+            <div className="space-y-3 sm:space-y-4">
               <EditableSlider label="Brightness" min={0} max={100} value={brightness} onChange={setBrightness} />
               <EditableSlider label="Contrast" min={0} max={100} value={contrast} onChange={setContrast} />
               <EditableSlider label="Exposure" min={0} max={100} value={exposure} onChange={setExposure} />
@@ -296,11 +296,12 @@ export function PhotoEditor() {
               <EditableSlider label="Rotate" min={-45} max={45} value={rotate} onChange={val => { setRotate(val); setImageState(prev => ({ ...prev, rotation: val })); }} valueSuffix="°" />
             </div>
 
-            <div className="flex items-center mt-4">
+            <div className="flex flex-col sm:flex-row items-center mt-2 sm:mt-4 gap-2 sm:gap-4">
               <Button
                 variant="secondary"
-                className="bg-gray-900 text-white hover:bg-gray-800 w-40"
+                className="bg-gray-900 text-white hover:bg-gray-800 w-full sm:w-40"
                 onClick={handleReAlign}
+                size="sm"
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Re-align
@@ -314,23 +315,23 @@ export function PhotoEditor() {
           </div>
 
           {/* Alignment instructions */}
-          <div className="bg-white rounded-lg p-4 mt-6">
-            <div className="space-y-3">
-              <h3 className="font-medium">Drag the colored handles to align:</h3>
-              <div className="space-y-2">
-                <p className="flex items-center">
+          <div className="bg-white rounded-lg p-2 sm:p-4 mt-4 sm:mt-6">
+            <div className="space-y-2 sm:space-y-3">
+              <h3 className="font-medium text-sm sm:text-base">Drag the colored handles to align:</h3>
+              <div className="space-y-1 sm:space-y-2">
+                <p className="flex items-center text-xs sm:text-base">
                   <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
                   Center line with middle of face
                 </p>
-                <p className="flex items-center">
+                <p className="flex items-center text-xs sm:text-base">
                   <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
                   Top red line with crown of head
                 </p>
-                <p className="flex items-center">
+                <p className="flex items-center text-xs sm:text-base">
                   <span className="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
                   Blue line with eyes
                 </p>
-                <p className="flex items-center">
+                <p className="flex items-center text-xs sm:text-base">
                   <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
                   Bottom red line with chin
                 </p>
