@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useAppContext } from "@/context/app-context"
 import { countries } from "@/data/countries"
 import { Check, ChevronDown, Globe, Search, FileText } from "lucide-react"
@@ -15,6 +15,7 @@ export function CountrySelector() {
   const { step, setStep, selectedCountry, setSelectedCountry, selectedDocument, setSelectedDocument } = useAppContext()
   const [openCountry, setOpenCountry] = useState(false)
   const [openDocument, setOpenDocument] = useState(false)
+  const countryInputRef = useRef<HTMLInputElement>(null)
 
   // Reset selected document when country changes
   useEffect(() => {
@@ -25,6 +26,19 @@ export function CountrySelector() {
       setSelectedDocument(selectedCountry.documents[0] || null)
     }
   }, [selectedCountry, selectedDocument, setSelectedDocument])
+
+  // Listen for custom event to focus country selector
+  useEffect(() => {
+    const handler = () => {
+      setStep(1)
+      setOpenCountry(true)
+      setTimeout(() => {
+        countryInputRef.current?.focus()
+      }, 100)
+    }
+    window.addEventListener('focus-country-selector', handler)
+    return () => window.removeEventListener('focus-country-selector', handler)
+  }, [setStep])
 
   if (step !== 1) return null
 
@@ -75,7 +89,7 @@ export function CountrySelector() {
                 </PopoverTrigger>
                 <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                   <Command className="w-full">
-                    <CommandInput placeholder="Search country..." className="h-12" />
+                    <CommandInput ref={countryInputRef} placeholder="Search country..." className="h-12" />
                     <CommandList className="max-h-[300px]">
                       <CommandEmpty>No country found.</CommandEmpty>
                       <CommandGroup>

@@ -1,8 +1,18 @@
+"use client"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
+import { useRef } from "react"
 
 export function Header() {
+  // Function to focus the country selector input
+  const handleSelectDocument = () => {
+    // Set step to 1 (Choose country/document)
+    if (typeof window !== 'undefined') {
+      const event = new CustomEvent('focus-country-selector')
+      window.dispatchEvent(event)
+    }
+  }
   return (
     <header className="bg-white border-b">
       <div className="container mx-auto px-4 py-2 flex items-center justify-between">
@@ -35,7 +45,7 @@ export function Header() {
             <Button variant="outline" size="default" className="hidden md:inline-flex">
               Sign In
             </Button>
-            <Button size="default">Get Started</Button>
+            <Button size="default" onClick={handleSelectDocument}>Select Document</Button>
           </div>
         </nav>
       </div>
