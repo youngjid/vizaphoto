@@ -222,7 +222,7 @@ export function CountrySelector() {
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row justify-between items-center pt-4 gap-2 sm:gap-0">
+            <div className="flex flex-col sm:flex-row justify-between items-center pt-4 gap-2 sm:gap-x-4 sm:gap-y-0">
               <div className="text-sm text-slate-500 text-center sm:text-left">
                 {selectedCountry && selectedDocument
                   ? `${selectedDocument.name} (${formatDimensions(selectedDocument.dimensions)}) for ${selectedCountry.name}`
