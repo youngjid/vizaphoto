@@ -223,7 +223,7 @@ export function CountrySelector() {
             )}
 
             <div className="flex flex-col sm:flex-row justify-between items-center pt-4 gap-2 sm:gap-x-4 sm:gap-y-0">
-              <div>
+              <div className="w-full text-center sm:text-left">
                 {selectedCountry && selectedDocument ? (
                   <div className="inline-block bg-gray-100 text-orange-600 text-sm rounded px-3 py-1 font-semibold">
                     {selectedDocument.name} {selectedDocument.dimensions && `(${formatDimensions(selectedDocument.dimensions)})`} <span className="text-slate-700 font-normal">| {selectedCountry.name}</span>
@@ -238,7 +238,7 @@ export function CountrySelector() {
                     )}
                   </div>
                 ) : (
-                  <div className="text-sm text-slate-500 text-center sm:text-left">Please select country and document type</div>
+                  <span className="text-sm text-slate-500">Please select country and document type</span>
                 )}
               </div>
               <Button
