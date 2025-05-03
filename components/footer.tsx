@@ -60,7 +60,9 @@ export function Footer() {
                   className="text-slate-600 hover:text-blue-600 flex items-center gap-2 w-full text-left bg-transparent border-0 p-0"
                   onClick={() => setSelectedCountry(countries.find(c => c.code === "US") || null)}
                 >
-                  <Image src="/assets/flags/us.svg" alt="US flag" width={20} height={14} className="inline-block" />
+                  <div style={{ width: 20, height: 14, position: 'relative', display: 'inline-block' }}>
+                    <Image src="/assets/flags/us.svg" alt="US flag" fill style={{ objectFit: 'contain' }} sizes="20px" />
+                  </div>
                   United States
                 </button>
               </li>
@@ -70,7 +72,9 @@ export function Footer() {
                   className="text-slate-600 hover:text-blue-600 flex items-center gap-2 w-full text-left bg-transparent border-0 p-0"
                   onClick={() => setSelectedCountry(countries.find(c => c.code === "GB") || null)}
                 >
-                  <Image src="/assets/flags/gb.svg" alt="UK flag" width={20} height={14} className="inline-block" />
+                  <div style={{ width: 20, height: 14, position: 'relative', display: 'inline-block' }}>
+                    <Image src="/assets/flags/gb.svg" alt="UK flag" fill style={{ objectFit: 'contain' }} sizes="20px" />
+                  </div>
                   United Kingdom
                 </button>
               </li>
@@ -80,7 +84,9 @@ export function Footer() {
                   className="text-slate-600 hover:text-blue-600 flex items-center gap-2 w-full text-left bg-transparent border-0 p-0"
                   onClick={() => setSelectedCountry(countries.find(c => c.code === "CA") || null)}
                 >
-                  <Image src="/assets/flags/ca.svg" alt="Canada flag" width={20} height={14} className="inline-block" />
+                  <div style={{ width: 20, height: 14, position: 'relative', display: 'inline-block' }}>
+                    <Image src="/assets/flags/ca.svg" alt="Canada flag" fill style={{ objectFit: 'contain' }} sizes="20px" />
+                  </div>
                   Canada
                 </button>
               </li>
@@ -90,7 +96,9 @@ export function Footer() {
                   className="text-slate-600 hover:text-blue-600 flex items-center gap-2 w-full text-left bg-transparent border-0 p-0"
                   onClick={() => setSelectedCountry(countries.find(c => c.code === "AU") || null)}
                 >
-                  <Image src="/assets/flags/au.svg" alt="Australia flag" width={20} height={14} className="inline-block" />
+                  <div style={{ width: 20, height: 14, position: 'relative', display: 'inline-block' }}>
+                    <Image src="/assets/flags/au.svg" alt="Australia flag" fill style={{ objectFit: 'contain' }} sizes="20px" />
+                  </div>
                   Australia
                 </button>
               </li>
@@ -100,7 +108,9 @@ export function Footer() {
                   className="text-slate-600 hover:text-blue-600 flex items-center gap-2 w-full text-left bg-transparent border-0 p-0"
                   onClick={() => setSelectedCountry(countries.find(c => c.code === "DE") || null)}
                 >
-                  <Image src="/assets/flags/de.svg" alt="Germany flag" width={20} height={14} className="inline-block" />
+                  <div style={{ width: 20, height: 14, position: 'relative', display: 'inline-block' }}>
+                    <Image src="/assets/flags/de.svg" alt="Germany flag" fill style={{ objectFit: 'contain' }} sizes="20px" />
+                  </div>
                   Germany
                 </button>
               </li>
