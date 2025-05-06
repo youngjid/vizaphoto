@@ -2,13 +2,9 @@
 
 import React, { useEffect } from "react"
 import Image from "next/image"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Slider, EditableSlider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { ZoomIn, ZoomOut, RotateCcw, RotateCw, RefreshCw, Loader2, ImageDown } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { EditableSlider } from "@/components/ui/slider"
+import { RefreshCw, Loader2 } from "lucide-react"
 import type { DocumentType } from "@/data/countries"
 import { useAppContext } from "@/context/app-context"
 import { usePhotoEditor } from "./hooks/usePhotoEditor"
@@ -33,9 +29,9 @@ export function PhotoEditor() {
 
   // When auto-rotation is calculated (in usePhotoEditor callback)
   const handleAutoRotation = (autoRotation: number) => {
-    setRotate(autoRotation);
-    setInitialAutoRotation(autoRotation);
-  };
+    setRotate(autoRotation)
+    setInitialAutoRotation(autoRotation)
+  }
 
   const {
     canvasRef,
@@ -51,7 +47,6 @@ export function PhotoEditor() {
     setDragState,
     backgroundState,
     setBackgroundState,
-    calculateInitialGridLines,
     modelsLoaded,
     modelLoadingError,
     isDetecting,
@@ -82,7 +77,7 @@ export function PhotoEditor() {
 
   // Draw canvas when any parameters change
   useEffect(() => {
-    if (!modelsLoaded || modelLoadingError) return;
+    if (!modelsLoaded || modelLoadingError) return
     if (!canvasRef.current) return
 
     const canvas = canvasRef.current
@@ -102,12 +97,12 @@ export function PhotoEditor() {
     // Contrast: 0-100 (default 50), CSS: 1 is normal
     // Exposure: 0-100 (default 50), map to brightness (1 is normal, 2 is max, 0 is min)
     // Saturate: 0-100 (default 50), CSS: 1 is normal
-    const brightnessVal = 1 + (brightness - 50) / 50; // 0 to 2
-    const contrastVal = 1 + (contrast - 50) / 50; // 0 to 2
-    const exposureVal = 1 + (exposure - 50) / 50; // 0 to 2
-    const saturateVal = 1 + (saturate - 50) / 50; // 0 to 2
+    const brightnessVal = 1 + (brightness - 50) / 50 // 0 to 2
+    const contrastVal = 1 + (contrast - 50) / 50 // 0 to 2
+    const exposureVal = 1 + (exposure - 50) / 50 // 0 to 2
+    const saturateVal = 1 + (saturate - 50) / 50 // 0 to 2
     // Combine exposure and brightness for a more photographic effect
-    const filterString = `brightness(${brightnessVal * exposureVal}) contrast(${contrastVal}) saturate(${saturateVal})`;
+    const filterString = `brightness(${brightnessVal * exposureVal}) contrast(${contrastVal}) saturate(${saturateVal})`
 
     // Draw the image if available
     if (imageRef.current) {
@@ -117,10 +112,10 @@ export function PhotoEditor() {
     // Always draw overlay and grid lines
     drawOverlay(ctx, canvas.width, canvas.height, boxDimensions)
     drawGridLines(ctx, canvas.width, canvas.height, gridLines, boxDimensions)
-  }, [imageState, gridLines, boxDimensions, modelsLoaded, modelLoadingError, brightness, contrast, exposure, saturate])
+  }, [imageState, gridLines, boxDimensions, modelsLoaded, modelLoadingError, brightness, contrast, exposure, saturate, canvasRef, imageRef, drawImage, drawOverlay, drawGridLines])
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!modelsLoaded || modelLoadingError) return;
+    if (!modelsLoaded || modelLoadingError) return
     if (!canvasRef.current) return
 
     const canvas = canvasRef.current
@@ -188,18 +183,6 @@ export function PhotoEditor() {
     setDragState({ activeLine: null, isDragging: false })
   }
 
-  const handleRotate = (degrees: number) => {
-    setImageState(prev => ({ ...prev, rotation: prev.rotation + degrees }))
-  }
-
-  const handleZoom = (zoomValue: number) => {
-    setImageState(prev => ({
-      ...prev,
-      zoom: zoomValue,
-      scale: zoomValue,
-    }))
-  }
-
   const formatDimensions = (dimensions: DocumentType['dimensions']) => {
     const width = dimensions.width.toFixed(1)
     const height = dimensions.height.toFixed(1)
@@ -210,10 +193,10 @@ export function PhotoEditor() {
 
   // On Re-align click, reset rotation to initial auto value
   const handleReAlign = () => {
-    setRotate(initialAutoRotation);
-    setImageState(prev => ({ ...prev, rotation: initialAutoRotation }));
-    triggerGuidelineRecalculation();
-  };
+    setRotate(initialAutoRotation)
+    setImageState(prev => ({ ...prev, rotation: initialAutoRotation }))
+    triggerGuidelineRecalculation()
+  }
 
   if (step !== 3) return null
 
@@ -342,4 +325,4 @@ export function PhotoEditor() {
       </div>
     </div>
   )
-} 
+}
